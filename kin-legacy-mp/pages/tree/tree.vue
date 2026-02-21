@@ -1,159 +1,147 @@
 <template>
-  <view class="page-container">
-    <!-- 未选择家谱提示 -->
-    <view v-if="!currentFamily" class="empty-state">
-      <view class="empty-icon-wrap">
-        <text class="empty-icon-text">谱</text>
+  <view class="jpu-page-container">
+    <view v-if="!currentFamily" class="jpu-empty-state">
+      <view class="jpu-empty-icon-wrap">
+        <text class="jpu-empty-icon-text">谱</text>
       </view>
-      <text class="empty-text">请先选择一个家谱</text>
-      <view class="empty-btn" @click="goToIndex">返回首页选择</view>
+      <text class="jpu-empty-text">请先选择一个家谱</text>
+      <view class="jpu-empty-btn" @click="goToIndex">返回首页选择</view>
     </view>
 
     <block v-else>
-      <view class="stats-bar">
-        <text class="stats-text">共 {{ members.length }} 人</text>
-        <text class="stats-hint">点击成员查看详情</text>
+      <!-- 邀请码信息区 -->
+      <view class="jpu-invite-card">
+        <view>
+          <text class="jpu-invite-label">家族邀请码</text>
+          <text class="jpu-invite-code">{{ currentFamily.code }}</text>
+        </view>
+        <view class="jpu-copy-btn" @click="copyCode">
+          <text class="jpu-copy-btn-text">复制分享</text>
+        </view>
       </view>
 
-      <scroll-view scroll-x class="tree-scroll" v-if="treeData.length > 0">
-        <view class="tree-container">
-          <view class="tree-node" v-for="(node, index) in treeData" :key="node.id">
-            <TreeNode :node="node" :currentUserId="currentUserId" @click="showMemberDetail" />
+      <!-- 家族世系图标题 -->
+      <view class="jpu-section-title">
+        <view class="jpu-section-line"></view>
+        <text>家族世系图</text>
+      </view>
+
+      <!-- 家谱树容器 -->
+      <scroll-view scroll-x class="jpu-tree-scroll" v-if="treeData.length > 0">
+        <view class="jpu-tree-card">
+          <view class="jpu-tree-container">
+            <view class="jpu-tree-node-item" v-for="(node, index) in treeData" :key="node.id" :style="{ marginTop: index === 0 ? '0' : '32rpx' }">
+              <TreeNode :node="node" :currentUserId="currentUserId" @click="showMemberDetail" />
+            </view>
           </view>
         </view>
       </scroll-view>
 
-      <view v-else class="empty-state">
-        <view class="empty-icon-wrap">
-          <text class="empty-icon-text">谱</text>
+      <view v-else class="jpu-empty-state">
+        <view class="jpu-empty-icon-wrap">
+          <text class="jpu-empty-icon-text">谱</text>
         </view>
-        <text class="empty-text">暂无成员数据</text>
-        <view class="empty-btn">添加第一位成员</view>
-      </view>
-
-      <!-- 可拖动的邀请按钮 -->
-      <view 
-        class="drag-btn" 
-        :style="{ left: dragLeft + 'px', top: dragTop + 'px' }"
-        @touchstart="onDragStart"
-        @touchmove="onDragMove"
-        @touchend="onDragEnd"
-        @click="onDragClick"
-      >
-        <text class="drag-btn-text">邀请</text>
+        <text class="jpu-empty-text">暂无成员数据</text>
       </view>
     </block>
 
+    <!-- 遮罩层 -->
+    <view 
+      class="jpu-modal-overlay" 
+      :class="{ 'jpu-open': showDrawer || showEditModal || showInviteModal }"
+      @click="closeAllModals"
+    ></view>
+
+    <!-- 成员操作抽屉 -->
+    <view class="jpu-drawer" :class="{ 'jpu-open': showDrawer }">
+      <view class="jpu-drawer-handle"></view>
+      <view class="jpu-drawer-header">
+        <text class="jpu-drawer-title">{{ selectedMember.name }}</text>
+        <text class="jpu-drawer-subtitle">第 {{ selectedMember.generation || 1 }} 世成员</text>
+      </view>
+      <view class="jpu-drawer-actions">
+        <view class="jpu-drawer-btn jpu-btn-outline" @click="openForm('add-child')">
+          <text class="jpu-drawer-btn-text">录入子嗣 (下一世)</text>
+          <text class="jpu-drawer-btn-arrow">↳</text>
+        </view>
+        <view class="jpu-drawer-btn jpu-btn-outline" @click="openForm('add-parent')">
+          <text class="jpu-drawer-btn-text">追溯先祖 (上一世)</text>
+          <text class="jpu-drawer-btn-arrow">↰</text>
+        </view>
+        <view class="jpu-drawer-btn jpu-btn-danger" @click="openForm('edit-member')">
+          <text class="jpu-drawer-btn-text">修正小传</text>
+          <text class="jpu-drawer-btn-arrow">✎</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 表单弹窗 -->
+    <view v-if="showEditModal" class="jpu-modal-center">
+      <view class="jpu-modal-header">
+        <text class="jpu-modal-title">{{ formTitle }}</text>
+        <text class="jpu-modal-close" @click="closeAllModals">×</text>
+      </view>
+      <view class="jpu-modal-body">
+        <view class="jpu-form-group">
+          <text class="jpu-form-label">尊讳/姓名</text>
+          <input 
+            class="jpu-form-input" 
+            :value="editForm.name"
+            @input="editForm.name = $event.detail.value"
+            placeholder="输入真实姓名"
+            placeholder-class="jpu-placeholder"
+          />
+        </view>
+        <view class="jpu-form-group">
+          <text class="jpu-form-label">性别</text>
+          <view class="jpu-radio-group">
+            <label class="jpu-radio-item">
+              <radio class="jpu-radio" value="male" :checked="editForm.gender === 'male'" @click="editForm.gender = 'male'" />
+              <text class="jpu-radio-text">男</text>
+            </label>
+            <label class="jpu-radio-item">
+              <radio class="jpu-radio" value="female" :checked="editForm.gender === 'female'" @click="editForm.gender = 'female'" />
+              <text class="jpu-radio-text">女</text>
+            </label>
+          </view>
+        </view>
+        <view v-if="formType === 'add-parent'" class="jpu-tip-warning">
+          <text class="jpu-tip-bold">注意：</text>
+          <text>追溯先祖将自动重新推算当前分支所有后裔的世代辈分。</text>
+        </view>
+      </view>
+      <view class="jpu-modal-footer">
+        <view class="jpu-btn-gray" @click="closeAllModals">
+          <text>作罢</text>
+        </view>
+        <view class="jpu-btn-primary" @click="submitForm">
+          <text>落笔确认</text>
+        </view>
+      </view>
+    </view>
+
     <!-- 邀请弹窗 -->
-    <view v-if="showInviteModal" class="modal-overlay" @click="showInviteModal = false">
-      <view class="modal-box" @click.stop>
-        <view class="modal-header">
-          <text class="modal-title">邀请家人加入</text>
-          <view class="modal-close" @click="showInviteModal = false">
-            <text class="close-text">×</text>
-          </view>
-        </view>
-        
-        <view class="qr-container">
-          <image class="qr-image" :src="qrCodeUrl" mode="aspectFit" />
-        </view>
-
-        <view class="code-display">
-          <text class="code-label">家谱码</text>
-          <text class="code-value">{{ currentFamily.code }}</text>
-          <view class="copy-btn" @click="copyCode">
-            <text class="copy-text">复制</text>
-          </view>
-        </view>
-
-        <button class="share-btn" open-type="share">分享邀请</button>
+    <view v-if="showInviteModal" class="jpu-modal-center">
+      <view class="jpu-modal-header">
+        <text class="jpu-modal-title">邀请家人加入</text>
+        <text class="jpu-modal-close" @click="showInviteModal = false">×</text>
       </view>
-    </view>
-
-    <!-- 成员详情弹窗 -->
-    <view v-if="showMemberModal" class="modal-overlay" @click="showMemberModal = false">
-      <view class="modal-box member-modal" @click.stop>
-        <view class="member-header">
-          <view class="member-avatar" :class="{ 'is-me': isCurrentUser }">
-            <text class="member-avatar-text">{{ selectedMember.name ? selectedMember.name.charAt(0) : '?' }}</text>
-          </view>
-          <text class="member-name">{{ selectedMember.name }}</text>
-          <view class="member-tags">
-            <view class="member-tag">
-              <text class="tag-text">{{ genderText }}</text>
-            </view>
-            <view class="member-tag">
-              <text class="tag-text">{{ selectedMember.isCreator ? '创建者' : '成员' }}</text>
-            </view>
-            <view v-if="isCurrentUser" class="member-tag me-tag">
-              <text class="tag-text">我</text>
-            </view>
-          </view>
+      <view class="jpu-modal-body">
+        <view class="jpu-qr-container">
+          <image class="jpu-qr-image" :src="qrCodeUrl" mode="aspectFit" />
         </view>
-
-        <view class="member-info-list">
-          <view class="info-item">
-            <text class="info-label">出生日期</text>
-            <text class="info-value">{{ selectedMember.birthDate || '未设置' }}</text>
-          </view>
-          <view class="info-item">
-            <text class="info-label">简介</text>
-            <text class="info-value bio-text">{{ selectedMember.bio || '暂无简介' }}</text>
-          </view>
-        </view>
-
-        <view class="member-actions">
-          <view v-if="!isSelf" class="btn-outline" @click="showEditRequest">申请修改信息</view>
-          <view class="btn-gray" @click="showMemberModal = false">关闭</view>
+        <view class="jpu-code-display">
+          <text class="jpu-code-label">家谱码</text>
+          <text class="jpu-code-value">{{ currentFamily.code }}</text>
         </view>
       </view>
-    </view>
-
-    <!-- 修改申请弹窗 -->
-    <view v-if="showEditModal" class="modal-overlay" @click="showEditModal = false">
-      <view class="modal-box" @click.stop>
-        <view class="modal-header">
-          <text class="modal-title">申请修改信息</text>
-          <view class="modal-close" @click="showEditModal = false">
-            <text class="close-text">×</text>
-          </view>
+      <view class="jpu-modal-footer">
+        <view class="jpu-btn-outline" @click="copyCode">
+          <text>复制邀请码</text>
         </view>
-        <text class="modal-subtitle">修改提交后需由创建者审批</text>
-        
-        <view class="modal-body">
-          <view class="form-item">
-            <text class="form-label">修改字段 <text class="required">*</text></text>
-            <picker :value="editFieldIndex" :range="editFields" range-key="label" @change="onEditFieldChange">
-              <view class="picker-field">
-                <text class="picker-value">{{ editFields[editFieldIndex].label }}</text>
-                <text class="picker-arrow">∨</text>
-              </view>
-            </picker>
-          </view>
-          
-          <view class="form-item">
-            <text class="form-label">新内容 <text class="required">*</text></text>
-            <input 
-              v-if="editFields[editFieldIndex].value !== 'bio'"
-              class="form-input" 
-              :placeholder="'请输入新的' + editFields[editFieldIndex].label" 
-              v-model="editForm.newValue"
-              placeholder-class="placeholder"
-            />
-            <textarea 
-              v-else
-              class="form-textarea" 
-              placeholder="请输入新的简介"
-              v-model="editForm.newValue"
-              placeholder-class="placeholder"
-            />
-          </view>
-        </view>
-        
-        <view class="modal-footer">
-          <view class="btn-cancel" @click="showEditModal = false">取消</view>
-          <view class="btn-confirm" @click="submitEditRequest">提交申请</view>
-        </view>
+        <button class="jpu-btn-primary" open-type="share">
+          <text>分享邀请</text>
+        </button>
       </view>
     </view>
   </view>
@@ -172,31 +160,16 @@ export default {
   data() {
     return {
       showInviteModal: false,
-      showMemberModal: false,
+      showDrawer: false,
       showEditModal: false,
       members: [],
       treeData: [],
       selectedMember: {},
-      editFields: [
-        { label: '姓名', value: 'name' },
-        { label: '出生日期', value: 'birthDate' },
-        { label: '简介', value: 'bio' }
-      ],
-      editFieldIndex: 0,
+      formType: '',
       editForm: {
-        fieldName: 'name',
-        newValue: ''
-      },
-      dragLeft: 0,
-      dragTop: 0,
-      startLeft: 0,
-      startTop: 0,
-      startPageX: 0,
-      startPageY: 0,
-      isDragging: false,
-      hasMoved: false,
-      windowWidth: 375,
-      windowHeight: 667
+        name: '',
+        gender: 'male'
+      }
     }
   },
 
@@ -209,23 +182,12 @@ export default {
       var code = this.currentFamily && this.currentFamily.code || '000000'
       return 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=FamilyCode' + code
     },
-    genderText() {
-      return this.selectedMember.gender === 'male' ? '男' : '女'
-    },
-    isSelf() {
-      return this.selectedMember.userId === this.currentUserId
-    },
-    isCurrentUser() {
-      return this.selectedMember.userId === this.currentUserId
+    formTitle() {
+      if (this.formType === 'add-child') return '为 [' + this.selectedMember.name + '] 录入子嗣'
+      if (this.formType === 'add-parent') return '为 [' + this.selectedMember.name + '] 追溯先祖'
+      if (this.formType === 'edit-member') return '修正小传'
+      return ''
     }
-  },
-
-  onLoad() {
-    var systemInfo = uni.getSystemInfoSync()
-    this.windowWidth = systemInfo.windowWidth
-    this.windowHeight = systemInfo.windowHeight
-    this.dragLeft = this.windowWidth - 80
-    this.dragTop = this.windowHeight - 220
   },
 
   onShow() {
@@ -260,90 +222,54 @@ export default {
 
     showMemberDetail(member) {
       this.selectedMember = member
-      this.showMemberModal = true
+      this.showDrawer = true
     },
 
-    onDragStart(e) {
-      this.isDragging = true
-      this.hasMoved = false
-      this.startLeft = this.dragLeft
-      this.startTop = this.dragTop
-      this.startPageX = e.touches[0].pageX
-      this.startPageY = e.touches[0].pageY
+    closeAllModals() {
+      this.showDrawer = false
+      this.showEditModal = false
     },
 
-    onDragMove(e) {
-      if (!this.isDragging) return
-      
-      var moveX = e.touches[0].pageX - this.startPageX
-      var moveY = e.touches[0].pageY - this.startPageY
-      
-      if (Math.abs(moveX) > 5 || Math.abs(moveY) > 5) {
-        this.hasMoved = true
+    openForm(type) {
+      this.formType = type
+      this.editForm = {
+        name: type === 'edit-member' ? this.selectedMember.name : '',
+        gender: this.selectedMember.gender || 'male'
       }
-      
-      var newLeft = this.startLeft + moveX
-      var newTop = this.startTop + moveY
-      
-      var btnSize = 70
-      newLeft = Math.max(10, Math.min(newLeft, this.windowWidth - btnSize - 10))
-      newTop = Math.max(100, Math.min(newTop, this.windowHeight - btnSize - 120))
-      
-      this.dragLeft = newLeft
-      this.dragTop = newTop
-    },
-
-    onDragEnd(e) {
-      this.isDragging = false
-    },
-
-    onDragClick() {
-      if (!this.hasMoved) {
-        this.showInviteModal = true
-      }
+      this.showDrawer = false
+      this.showEditModal = true
     },
 
     copyCode() {
       uni.setClipboardData({
         data: this.currentFamily.code,
         success: function() {
-          uni.showToast({ title: '已复制家谱码', icon: 'success' })
+          uni.showToast({ title: '已复制邀请码', icon: 'success' })
         }
       })
     },
 
-    onEditFieldChange(e) {
-      this.editFieldIndex = e.detail.value
-      this.editForm.fieldName = this.editFields[this.editFieldIndex].value
-      this.editForm.newValue = ''
-    },
-
-    showEditRequest() {
-      this.showMemberModal = false
-      this.editFieldIndex = 0
-      this.editForm = {
-        fieldName: 'name',
-        newValue: ''
-      }
-      this.showEditModal = true
-    },
-
-    async submitEditRequest() {
-      if (!this.editForm.newValue.trim()) {
-        uni.showToast({ title: '请输入新内容', icon: 'none' })
+    async submitForm() {
+      if (!this.editForm.name.trim()) {
+        uni.showToast({ title: '姓名不能为空', icon: 'none' })
         return
       }
 
       try {
         uni.showLoading({ title: '提交中...' })
-        await api.member.applyEdit(this.currentFamily.id, this.selectedMember.id, {
-          fieldName: this.editForm.fieldName,
-          oldValue: this.selectedMember[this.editForm.fieldName] || '',
-          newValue: this.editForm.newValue
-        })
+        
+        if (this.formType === 'edit-member') {
+          await api.member.applyEdit(this.currentFamily.id, this.selectedMember.id, {
+            fieldName: 'name',
+            oldValue: this.selectedMember.name,
+            newValue: this.editForm.name
+          })
+        }
+        
         uni.hideLoading()
-        uni.showToast({ title: '申请已提交', icon: 'success' })
-        this.showEditModal = false
+        uni.showToast({ title: '已提交', icon: 'success' })
+        this.closeAllModals()
+        this.loadTreeData()
       } catch (error) {
         uni.hideLoading()
       }
@@ -353,473 +279,449 @@ export default {
 </script>
 
 <style scoped>
-.page-container {
+.jpu-page-container {
   min-height: 100vh;
-  background: linear-gradient(180deg, #FFFBF5 0%, #F9FAFB 100%);
-  display: flex;
-  flex-direction: column;
+  background-color: var(--theme-bg);
+  padding: 32rpx;
 }
 
-.stats-bar {
-  display: flex;
-  justify-content: space-between;
-  padding: 20rpx 32rpx;
-  background-color: #FFFFFF;
-  border-bottom: 2rpx solid #F3F4F6;
-}
-
-.stats-text, .stats-hint {
-  font-size: 26rpx;
-  color: #6B7280;
-}
-
-.tree-scroll {
-  flex: 1;
-  white-space: nowrap;
-}
-
-.tree-container {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 40rpx 60rpx;
-  min-width: 100%;
-}
-
-.tree-node {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.empty-state {
-  flex: 1;
+/* 空状态 */
+.jpu-empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 80rpx;
+  padding: 160rpx 64rpx;
 }
 
-.empty-icon-wrap {
+.jpu-empty-icon-wrap {
   width: 160rpx;
   height: 160rpx;
-  border-radius: 32rpx;
-  background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+  border-radius: 16rpx;
+  background-color: var(--theme-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 32rpx;
-  box-shadow: 0 8rpx 24rpx rgba(139, 69, 19, 0.2);
+  box-shadow: 0 8rpx 24rpx rgba(142, 41, 44, 0.2);
 }
 
-.empty-icon-text {
+.jpu-empty-icon-text {
   font-size: 72rpx;
   color: #FFFFFF;
-  font-weight: 600;
+  font-weight: bold;
   letter-spacing: 8rpx;
 }
 
-.empty-text {
+.jpu-empty-text {
   font-size: 28rpx;
-  color: #9CA3AF;
+  color: #8D6E63;
   margin-bottom: 48rpx;
 }
 
-.empty-btn {
-  background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+.jpu-empty-btn {
+  background-color: var(--theme-primary);
   color: #FFFFFF;
   font-size: 28rpx;
-  font-weight: 500;
+  font-weight: bold;
+  letter-spacing: 4rpx;
   padding: 24rpx 48rpx;
-  border-radius: 44rpx;
+  border-radius: 12rpx;
 }
 
-.drag-btn {
-  position: fixed;
-  width: 140rpx;
-  height: 140rpx;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+/* Section标题 */
+.jpu-section-title {
   display: flex;
   align-items: center;
-  justify-content: center;
-  box-shadow: 0 8rpx 32rpx rgba(139, 69, 19, 0.35);
-  z-index: 100;
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #6D4C41;
+  margin-bottom: 24rpx;
+  margin-left: 8rpx;
 }
 
-.drag-btn:active {
-  transform: scale(1.05);
+.jpu-section-line {
+  width: 8rpx;
+  height: 28rpx;
+  background-color: var(--theme-primary);
+  margin-right: 16rpx;
+  border-radius: 4rpx;
 }
 
-.drag-btn-text {
-  font-size: 32rpx;
-  color: #FFFFFF;
-  font-weight: 600;
-  letter-spacing: 4rpx;
+/* 邀请码卡片 */
+.jpu-invite-card {
+  background-color: var(--theme-card);
+  border: 2rpx solid var(--theme-border);
+  border-radius: 12rpx;
+  padding: 32rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
 }
 
-/* 弹窗样式 */
-.modal-overlay {
+.jpu-invite-label {
+  font-size: 24rpx;
+  color: #8D6E63;
+  margin-bottom: 8rpx;
+  display: block;
+}
+
+.jpu-invite-code {
+  font-family: monospace;
+  font-size: 40rpx;
+  font-weight: bold;
+  letter-spacing: 12rpx;
+  color: var(--theme-primary);
+}
+
+.jpu-copy-btn {
+  background-color: #F9EBEA;
+  border: 2rpx solid #E6B0AA;
+  border-radius: 8rpx;
+  padding: 16rpx 24rpx;
+}
+
+.jpu-copy-btn:active {
+  background-color: #F2D7D5;
+}
+
+.jpu-copy-btn-text {
+  font-size: 24rpx;
+  font-weight: bold;
+  color: var(--theme-primary);
+}
+
+/* 家谱树滚动区 */
+.jpu-tree-scroll {
+  white-space: nowrap;
+}
+
+.jpu-tree-card {
+  background-color: var(--theme-card);
+  border: 2rpx solid var(--theme-border);
+  border-radius: 12rpx;
+  padding: 32rpx;
+  display: inline-block;
+  min-width: 100%;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+}
+
+.jpu-tree-container {
+  min-width: max-content;
+}
+
+.jpu-tree-node-item {
+  position: relative;
+}
+
+/* 遮罩层 */
+.jpu-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 200;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 50;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
 }
 
-.modal-box {
-  width: 85%;
-  max-width: 600rpx;
-  background-color: #FFFFFF;
-  border-radius: 24rpx;
-  overflow: hidden;
-  max-height: 80vh;
+.jpu-modal-overlay.jpu-open {
+  opacity: 1;
+  pointer-events: auto;
 }
 
-.modal-header {
+/* 底部抽屉 */
+.jpu-drawer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--theme-bg);
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 0 32rpx;
+  padding-bottom: constant(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 60;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 -8rpx 32rpx rgba(0, 0, 0, 0.15);
+}
+
+.jpu-drawer.jpu-open {
+  transform: translateY(0);
+}
+
+.jpu-drawer-handle {
+  width: 96rpx;
+  height: 8rpx;
+  background-color: var(--theme-border);
+  border-radius: 4rpx;
+  margin: 24rpx auto;
+}
+
+.jpu-drawer-header {
+  text-align: center;
+  margin-bottom: 32rpx;
+}
+
+.jpu-drawer-title {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: var(--theme-text);
+  letter-spacing: 6rpx;
+  display: block;
+}
+
+.jpu-drawer-subtitle {
+  font-size: 24rpx;
+  color: #8D6E63;
+  margin-top: 8rpx;
+  display: block;
+}
+
+.jpu-drawer-actions {
+  padding-bottom: 32rpx;
+}
+
+.jpu-drawer-btn {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 28rpx 32rpx;
-  border-bottom: 2rpx solid #F3F4F6;
-}
-
-.modal-title {
-  font-size: 34rpx;
-  font-weight: 600;
-  color: #1F2937;
-}
-
-.modal-close {
-  width: 48rpx;
-  height: 48rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.close-text {
-  font-size: 48rpx;
-  color: #9CA3AF;
-  line-height: 1;
-}
-
-.modal-subtitle {
-  display: block;
-  font-size: 26rpx;
-  color: #9CA3AF;
-  text-align: center;
-  padding: 16rpx 32rpx 0;
-}
-
-.modal-body {
-  padding: 24rpx 32rpx;
-}
-
-.qr-container {
-  padding: 32rpx;
-  display: flex;
-  justify-content: center;
-}
-
-.qr-image {
-  width: 320rpx;
-  height: 320rpx;
-  background-color: #F9FAFB;
-  border-radius: 16rpx;
-}
-
-.code-display {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 32rpx 24rpx;
-  padding: 24rpx;
-  background-color: #F9FAFB;
-  border-radius: 16rpx;
-}
-
-.code-label {
-  font-size: 28rpx;
-  color: #6B7280;
-  margin-right: 16rpx;
-}
-
-.code-value {
-  font-size: 44rpx;
-  font-weight: 600;
-  color: #8B4513;
-  letter-spacing: 8rpx;
-  margin-right: 20rpx;
-}
-
-.copy-btn {
-  padding: 12rpx 24rpx;
-  background-color: #FFFFFF;
-  border-radius: 20rpx;
-  border: 2rpx solid #E5E7EB;
-}
-
-.copy-text {
-  font-size: 26rpx;
-  color: #6B7280;
-}
-
-.share-btn {
-  margin: 0 32rpx 32rpx;
-  background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
-  color: #FFFFFF;
-  font-weight: 500;
-  border-radius: 44rpx;
-  font-size: 30rpx;
-  height: 88rpx;
-  line-height: 88rpx;
-}
-
-/* 成员详情 */
-.member-modal {
-  padding: 0;
-}
-
-.member-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 40rpx 32rpx;
-  background: linear-gradient(180deg, #FFFBF5 0%, #FFFFFF 100%);
-}
-
-.member-avatar {
-  width: 140rpx;
-  height: 140rpx;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 28rpx 48rpx;
+  border-radius: 8rpx;
   margin-bottom: 20rpx;
 }
 
-.member-avatar.is-me {
-  border: 6rpx solid #3B82F6;
-  box-shadow: 0 0 0 6rpx rgba(59, 130, 246, 0.2);
+.jpu-drawer-btn:last-child {
+  margin-bottom: 0;
 }
 
-.member-avatar-text {
-  font-size: 56rpx;
-  font-weight: 600;
-  color: #FFFFFF;
+.jpu-drawer-btn-text {
+  font-size: 28rpx;
+  font-weight: bold;
   letter-spacing: 4rpx;
 }
 
-.member-name {
-  font-size: 40rpx;
-  font-weight: 600;
-  color: #1F2937;
-  margin-bottom: 16rpx;
-}
-
-.member-tags {
-  display: flex;
-  gap: 12rpx;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.member-tag {
-  background-color: #F3F4F6;
-  padding: 10rpx 20rpx;
-  border-radius: 20rpx;
-}
-
-.me-tag {
-  background-color: #3B82F6;
-}
-
-.me-tag .tag-text {
-  color: #FFFFFF;
-}
-
-.tag-text {
-  font-size: 24rpx;
-  color: #6B7280;
-}
-
-.member-info-list {
-  padding: 0 32rpx;
-}
-
-.info-item {
-  display: flex;
-  padding: 20rpx 0;
-  border-bottom: 2rpx solid #F3F4F6;
-}
-
-.info-item:last-child {
-  border-bottom: none;
-}
-
-.info-label {
+.jpu-drawer-btn-arrow {
   font-size: 28rpx;
-  color: #9CA3AF;
-  width: 160rpx;
-  flex-shrink: 0;
 }
 
-.info-value {
-  font-size: 28rpx;
-  font-weight: 500;
-  color: #1F2937;
-  flex: 1;
-  text-align: right;
+.jpu-btn-outline {
+  background-color: var(--theme-card);
+  border: 2rpx solid var(--theme-border);
 }
 
-.bio-text {
-  word-break: break-all;
+.jpu-btn-outline .jpu-drawer-btn-text,
+.jpu-btn-outline .jpu-drawer-btn-arrow {
+  color: var(--theme-text);
 }
 
-.member-actions {
-  padding: 24rpx 32rpx 32rpx;
-  display: flex;
-  flex-direction: column;
-  gap: 16rpx;
+.jpu-btn-outline .jpu-drawer-btn-arrow {
+  color: var(--theme-border);
 }
 
-.btn-outline {
-  border: 3rpx solid #8B4513;
-  color: #8B4513;
-  font-weight: 500;
-  height: 88rpx;
-  line-height: 88rpx;
-  border-radius: 44rpx;
-  text-align: center;
-  font-size: 30rpx;
+.jpu-btn-danger {
+  background-color: #F5EBE9;
+  border: 2rpx solid #E6B0AA;
 }
 
-.btn-outline:active {
-  background-color: #FFFBF5;
+.jpu-btn-danger .jpu-drawer-btn-text,
+.jpu-btn-danger .jpu-drawer-btn-arrow {
+  color: var(--theme-primary);
 }
 
-.btn-gray {
-  background-color: #F3F4F6;
-  color: #4B5563;
-  font-weight: 500;
-  height: 88rpx;
-  line-height: 88rpx;
-  border-radius: 44rpx;
-  text-align: center;
-  font-size: 30rpx;
+.jpu-btn-danger .jpu-drawer-btn-arrow {
+  color: #E6B0AA;
 }
 
-.btn-gray:active {
-  background-color: #E5E7EB;
+/* 居中模态框 */
+.jpu-modal-center {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 85%;
+  max-width: 600rpx;
+  background-color: var(--theme-card);
+  border: 2rpx solid var(--theme-border);
+  border-radius: 16rpx;
+  overflow: hidden;
+  z-index: 60;
+  box-shadow: 0 16rpx 48rpx rgba(0, 0, 0, 0.2);
 }
 
-/* 表单 */
-.form-item {
-  margin-bottom: 24rpx;
-}
-
-.form-label {
-  display: block;
-  font-size: 28rpx;
-  color: #374151;
-  margin-bottom: 12rpx;
-  font-weight: 500;
-}
-
-.required {
-  color: #DC2626;
-}
-
-.form-input {
-  width: 100%;
-  height: 88rpx;
-  line-height: 88rpx;
-  background-color: #F9FAFB;
-  border: 2rpx solid #E5E7EB;
-  border-radius: 12rpx;
-  padding: 0 24rpx;
-  font-size: 30rpx;
-  color: #1F2937;
-  box-sizing: border-box;
-}
-
-.form-textarea {
-  width: 100%;
-  height: 160rpx;
-  background-color: #F9FAFB;
-  border: 2rpx solid #E5E7EB;
-  border-radius: 12rpx;
-  padding: 20rpx 24rpx;
-  font-size: 30rpx;
-  color: #1F2937;
-  box-sizing: border-box;
-}
-
-.placeholder {
-  color: #9CA3AF;
-}
-
-.picker-field {
+.jpu-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #F9FAFB;
-  border: 2rpx solid #E5E7EB;
-  border-radius: 12rpx;
-  padding: 0 24rpx;
-  height: 88rpx;
+  padding: 32rpx;
+  background-color: var(--theme-bg);
+  border-bottom: 2rpx solid var(--theme-border);
 }
 
-.picker-value {
-  font-size: 30rpx;
-  color: #1F2937;
+.jpu-modal-title {
+  font-size: 34rpx;
+  font-weight: bold;
+  color: var(--theme-text);
+  letter-spacing: 6rpx;
 }
 
-.picker-arrow {
-  font-size: 24rpx;
-  color: #9CA3AF;
+.jpu-modal-close {
+  font-size: 48rpx;
+  color: #8D6E63;
+  line-height: 1;
 }
 
-.modal-footer {
+.jpu-modal-body {
+  padding: 32rpx;
+}
+
+.jpu-modal-footer {
   display: flex;
-  padding: 20rpx 32rpx 32rpx;
+  padding: 24rpx 32rpx 32rpx;
   gap: 24rpx;
 }
 
-.btn-cancel {
-  flex: 1;
-  height: 88rpx;
-  line-height: 88rpx;
-  text-align: center;
-  font-size: 30rpx;
-  font-weight: 500;
-  border-radius: 44rpx;
-  background-color: #F3F4F6;
-  color: #6B7280;
+/* 表单 */
+.jpu-form-group {
+  margin-bottom: 32rpx;
 }
 
-.btn-confirm {
-  flex: 1;
+.jpu-form-label {
+  display: block;
+  font-size: 28rpx;
+  color: var(--theme-text);
+  margin-bottom: 12rpx;
+  font-weight: bold;
+}
+
+.jpu-form-input {
+  width: 100%;
   height: 88rpx;
-  line-height: 88rpx;
+  background-color: var(--theme-bg);
+  border: 2rpx solid var(--theme-border);
+  border-radius: 8rpx;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+  color: var(--theme-text);
+  box-sizing: border-box;
+  font-family: 'Noto Serif SC', 'Songti SC', 'SimSun', STSong, serif;
+}
+
+.jpu-placeholder {
+  color: #9CA3AF;
+}
+
+.jpu-radio-group {
+  display: flex;
+  gap: 48rpx;
+}
+
+.jpu-radio-item {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.jpu-radio {
+  accent-color: var(--theme-primary);
+}
+
+.jpu-radio-text {
+  font-size: 28rpx;
+  color: var(--theme-text);
+}
+
+/* 提示区 */
+.jpu-tip-warning {
+  background-color: #FFF8E1;
+  border: 2rpx solid #FFE082;
+  border-radius: 8rpx;
+  padding: 20rpx 24rpx;
+  font-size: 24rpx;
+  color: #8D6E63;
+  line-height: 1.6;
+}
+
+.jpu-tip-bold {
+  color: #F57F17;
+  font-weight: bold;
+}
+
+/* 按钮 */
+.jpu-btn-gray {
+  flex: 1;
+  background-color: var(--theme-bg);
+  border: 2rpx solid var(--theme-border);
+  border-radius: 12rpx;
+  padding: 24rpx;
   text-align: center;
-  font-size: 30rpx;
-  font-weight: 500;
-  border-radius: 44rpx;
-  background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+}
+
+.jpu-btn-gray text {
+  font-size: 28rpx;
+  font-weight: bold;
+  letter-spacing: 4rpx;
+  color: var(--theme-text);
+}
+
+.jpu-btn-primary {
+  flex: 1;
+  background-color: var(--theme-primary);
+  border: 2rpx solid #722023;
+  border-radius: 12rpx;
+  padding: 24rpx;
+  text-align: center;
+  box-shadow: 0 4rpx 12rpx rgba(142, 41, 44, 0.2);
+}
+
+.jpu-btn-primary text {
+  font-size: 28rpx;
+  font-weight: bold;
+  letter-spacing: 4rpx;
   color: #FFFFFF;
-  box-shadow: 0 4rpx 16rpx rgba(139, 69, 19, 0.25);
 }
 
-.btn-cancel:active, .btn-confirm:active {
-  opacity: 0.9;
+/* 二维码 */
+.jpu-qr-container {
+  display: flex;
+  justify-content: center;
+  padding: 32rpx 0;
+}
+
+.jpu-qr-image {
+  width: 320rpx;
+  height: 320rpx;
+  background-color: var(--theme-bg);
+  border-radius: 16rpx;
+}
+
+.jpu-code-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24rpx;
+  background-color: var(--theme-bg);
+  border: 2rpx solid var(--theme-border);
+  border-radius: 12rpx;
+}
+
+.jpu-code-label {
+  font-size: 28rpx;
+  color: #8D6E63;
+  margin-right: 16rpx;
+}
+
+.jpu-code-value {
+  font-family: monospace;
+  font-size: 40rpx;
+  font-weight: bold;
+  letter-spacing: 8rpx;
+  color: var(--theme-primary);
 }
 </style>

@@ -49,9 +49,15 @@ public class UserController {
         return Result.success(userService.updateUser(id, request));
     }
 
-    @DeleteMapping("/user/{id}")
-    public Result<Void> deleteUser(@PathVariable Long id) {
+    @PutMapping("/user/{id}/disable")
+    public Result<Void> disableUser(@PathVariable Long id) {
         userService.disableUser(id);
+        return Result.success();
+    }
+
+    @PutMapping("/user/{id}/enable")
+    public Result<Void> enableUser(@PathVariable Long id) {
+        userService.enableUser(id);
         return Result.success();
     }
 }

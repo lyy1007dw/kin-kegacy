@@ -26,7 +26,7 @@ service.interceptors.response.use(
     if (res.code !== 200) {
       const message = useMessage()
       const errorMsg = res.message || '请求失败'
-      message.error(errorMsg)
+      message.error(`业务异常: ${errorMsg}`)
       return Promise.reject(new Error(errorMsg))
     }
     return res
@@ -36,10 +36,12 @@ service.interceptors.response.use(
     let errorMsg = '网络错误'
     if (error.response?.data?.message) {
       errorMsg = error.response.data.message
+    } else if (error.response?.data?.msg) {
+      errorMsg = error.response.data.msg
     } else if (error.message) {
       errorMsg = error.message
     }
-    message.error(errorMsg)
+    message.error(`业务异常: ${errorMsg}`)
     return Promise.reject(new Error(errorMsg))
   }
 )

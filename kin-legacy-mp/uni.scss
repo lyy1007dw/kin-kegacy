@@ -1,27 +1,52 @@
-$uni-color-primary: #8B4513;
+/* 家谱小程序主题变量 - 传统风格 */
+$uni-color-primary: #8E292C;
+$uni-color-primary-dark: #722023;
 $uni-color-success: #4CAF50;
 $uni-color-warning: #f0ad4e;
 $uni-color-error: #DD524D;
 
-$uni-text-color: #1F2937;
+$uni-text-color: #3E2A23;
 $uni-text-color-inverse: #FFFFFF;
-$uni-text-color-grey: #6B7280;
+$uni-text-color-grey: #6D4C41;
+$uni-text-color-muted: #8D6E63;
 $uni-text-color-placeholder: #9CA3AF;
 
-$uni-bg-color: #F9FAFB;
+$uni-bg-color: #F2ECE4;
+$uni-bg-color-card: #FBF9F6;
 $uni-bg-color-grey: #F3F4F6;
-$uni-border-color: #E5E7EB;
+$uni-border-color: #D4C9BD;
 
 $uni-spacing-sm: 16rpx;
 $uni-spacing-md: 32rpx;
 $uni-spacing-lg: 48rpx;
 
 $uni-radius-sm: 8rpx;
-$uni-radius-md: 16rpx;
-$uni-radius-lg: 24rpx;
+$uni-radius-md: 12rpx;
+$uni-radius-lg: 16rpx;
 
 $uni-font-size-xs: 20rpx;
 $uni-font-size-sm: 24rpx;
 $uni-font-size-base: 28rpx;
 $uni-font-size-lg: 32rpx;
 $uni-font-size-xl: 36rpx;
+
+/* 主题色变量 */
+$theme-bg: #F2ECE4;
+$theme-card: #FBF9F6;
+$theme-text: #3E2A23;
+$theme-primary: #8E292C;
+$theme-border: #D4C9BD;
+
+/* 性别颜色 */
+$gender-male-bg: #EAF2FF;
+$gender-male-text: #1565C0;
+$gender-female-bg: #FDF2F1;
+$gender-female-text: #8E292C;
+
+/* 提示信息颜色 */
+$tip-warning-bg: #FFF8E1;
+$tip-warning-border: #FFE082;
+$tip-warning-text: #F57F17;
+
+$tip-danger-bg: #FDF2F1;
+$tip-danger-border: #E6B0AA;

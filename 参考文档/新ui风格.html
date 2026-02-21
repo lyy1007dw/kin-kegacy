@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>家谱小程序 MVP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 传统风格字体栈 */
+        :root {
+            --theme-bg: #F2ECE4;
+            --theme-card: #FBF9F6;
+            --theme-text: #3E2A23;
+            --theme-primary: #8E292C;
+            --theme-border: #D4C9BD;
+        }
+
+        body { 
+            background-color: var(--theme-bg); 
+            font-family: 'Noto Serif SC', 'Songti SC', 'SimSun', STSong, serif; 
+            -webkit-tap-highlight-color: transparent;
+            color: var(--theme-text);
+        }
+        
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--theme-border); border-radius: 4px; }
+
+        /* 移动端容器模拟 */
+        .app-container {
+            max-width: 414px;
+            margin: 0 auto;
+            background: var(--theme-bg);
+            min-height: 100vh;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* 页面切换动画 */
+        .view-layer {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--theme-bg);
+            z-index: 10;
+            animation: fadeIn 0.3s ease;
+        }
+        .view-layer.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 抽屉与遮罩 */
+        .drawer {
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .drawer.open { transform: translateY(0); }
+        .overlay {
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(2px);
+        }
+        .overlay.open { opacity: 1; pointer-events: auto; }
+
+        /* ======== 传统家谱树结构CSS ======== */
+        .tree-children {
+            position: relative;
+            padding-left: 28px;
+            margin-left: 12px;
+            transition: all 0.3s ease-in-out;
+            transform-origin: top;
+        }
+        .tree-children::before {
+            content: '';
+            position: absolute;
+            top: 0; bottom: 0; left: 0;
+            border-left: 1px solid var(--theme-border);
+        }
+        .tree-node-item { position: relative; margin-top: 16px; }
+        .tree-node-item::before {
+            content: '';
+            position: absolute;
+            top: 22px; left: -28px;
+            width: 28px;
+            border-top: 1px solid var(--theme-border);
+        }
+        .tree-node-item:last-child > .tree-children::before { display: none; }
+        
+        .tree-children.hidden {
+            display: none;
+        }
+
+        /* 底部导航适配安全区 */
+        .bottom-nav { padding-bottom: env(safe-area-inset-bottom); }
+    </style>
+</head>
+<body>
+
+<div class="app-container" id="app">
+    
+    <!-- 全局头部 -->
+    <header class="px-4 py-3 flex items-center justify-between sticky top-0 z-20 border-b shadow-sm" style="background-color: var(--theme-card); border-color: var(--theme-border); padding-top: max(12px, env(safe-area-inset-top));">
+        <button id="btn-back" class="hidden font-medium px-2 py-1 -ml-2 rounded active:bg-[#F2ECE4] transition-colors" style="color: var(--theme-text);" onclick="app.goBack()">
+            <span class="text-xl leading-none">‹</span> 返回
+        </button>
+        <h1 id="header-title" class="text-lg font-bold flex-1 text-center tracking-widest" style="color: var(--theme-text);">我的家谱</h1>
+        <div class="w-12"></div>
+    </header>
+
+    <!-- 主体内容区 -->
+    <main class="flex-1 overflow-y-auto relative pb-20">
+        
+        <!-- 视图 1：首页列表 -->
+        <div id="view-home" class="view-layer active px-4 py-4 space-y-6">
+            <!-- 快捷操作区 -->
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="app.openModal('create-genealogy')" class="text-white p-4 rounded border flex flex-col items-center justify-center space-y-2 transition-colors shadow-sm active:opacity-90" style="background-color: var(--theme-primary); border-color: #722023;">
+                    <span class="text-xl">⛩️</span>
+                    <span class="font-bold text-sm tracking-wider">敬修家谱</span>
+                </button>
+                <button onclick="app.openModal('join-genealogy')" class="p-4 rounded border flex flex-col items-center justify-center space-y-2 transition-colors shadow-sm active:bg-[#F2ECE4]" style="background-color: var(--theme-card); color: var(--theme-primary); border-color: var(--theme-primary);">
+                    <span class="text-xl">📜</span>
+                    <span class="font-bold text-sm tracking-wider">寻根加入</span>
+                </button>
+            </div>
+
+            <!-- 家谱列表 -->
+            <div>
+                <h2 class="text-sm font-bold mb-3 ml-1 flex items-center" style="color: #6D4C41;"><span class="w-1 h-3 bg-[#8E292C] mr-2 inline-block"></span>我管理的家谱</h2>
+                <div id="genealogy-list" class="space-y-3">
+                    <!-- 列表通过JS渲染 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 视图 2：家谱详情 (树状图) -->
+        <div id="view-detail" class="view-layer px-4 py-6">
+            <div class="p-4 rounded shadow-sm border mb-6 flex justify-between items-center" style="background-color: var(--theme-card); border-color: var(--theme-border);">
+                <div>
+                    <div class="text-xs mb-1" style="color: #8D6E63;">家族邀请码</div>
+                    <div class="font-mono text-xl font-bold tracking-widest" style="color: var(--theme-primary);" id="detail-invite-code">8A2B9C</div>
+                </div>
+                <button onclick="alert('邀请码已复制，请发送给宗亲族人！')" class="px-3 py-1.5 rounded-sm text-xs font-bold border transition-colors" style="background-color: #F9EBEA; color: var(--theme-primary); border-color: #E6B0AA; active:bg-[#F2D7D5];">
+                    复制分享
+                </button>
+            </div>
+            
+            <h2 class="text-sm font-bold mb-4 ml-1 flex items-center" style="color: #6D4C41;"><span class="w-1 h-3 bg-[#8E292C] mr-2 inline-block"></span>家族世系图</h2>
+            <div class="rounded shadow-sm border p-4 overflow-x-auto relative" style="background-color: var(--theme-card); border-color: var(--theme-border);">
+                <div id="tree-container" class="min-w-max pb-4">
+                    <!-- 树结构通过JS渲染 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 视图 3：审批中心 -->
+        <div id="view-approval" class="view-layer px-4 py-4">
+            <div class="text-xs p-3 rounded mb-4 leading-relaxed border" style="background-color: #FFF8E1; color: #8D6E63; border-color: #FFE082;">
+                <span class="font-bold" style="color: #F57F17;">编修提示：</span> 族人提交的“信息修正”或“添丁”申请将在此处汇总，须由修谱人核准方可入谱。
+            </div>
+            <div id="approval-list" class="space-y-3">
+                <!-- 审批列表通过JS渲染 -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- 底部导航条 -->
+    <nav class="bottom-nav border-t flex absolute bottom-0 w-full z-20 pb-safe shadow-[0_-2px_10px_rgba(0,0,0,0.02)]" style="background-color: var(--theme-card); border-color: var(--theme-border);">
+        <button onclick="app.switchView('home')" id="nav-home" class="flex-1 py-3 flex flex-col items-center transition-colors nav-item" style="color: var(--theme-primary);">
+            <span class="text-xl mb-1">🏮</span>
+            <span class="text-[10px] font-bold tracking-widest">宗祠</span>
+        </button>
+        <button onclick="app.switchView('approval')" id="nav-approval" class="flex-1 py-3 flex flex-col items-center transition-colors relative nav-item" style="color: #8D6E63;">
+            <span class="text-xl mb-1">✉️</span>
+            <span class="text-[10px] font-bold tracking-widest">奏报</span>
+            <!-- 气泡提示 -->
+            <span id="approval-badge" class="absolute top-2 right-1/4 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-white hidden shadow-sm" style="background-color: var(--theme-primary);">0</span>
+        </button>
+    </nav>
+
+    <!-- 通用黑色遮罩 -->
+    <div id="modal-overlay" class="overlay fixed inset-0 bg-black/60 z-30" onclick="app.closeAllModals()"></div>
+
+    <!-- 底部抽屉：成员操作菜单 -->
+    <div id="action-drawer" class="drawer fixed bottom-0 left-0 right-0 max-w-md mx-auto rounded-t-xl z-40 pb-safe shadow-2xl" style="background-color: var(--theme-bg);">
+        <div class="w-12 h-1 rounded-full mx-auto mt-3 mb-2 opacity-50" style="background-color: var(--theme-border);"></div>
+        <div class="px-6 py-4">
+            <div class="text-center mb-6">
+                <h3 id="action-target-name" class="text-xl font-bold tracking-widest" style="color: var(--theme-text);">选择成员</h3>
+                <p id="action-target-desc" class="text-xs mt-1" style="color: #8D6E63;">第X世</p>
+            </div>
+            <div class="space-y-3 mb-4">
+                <button onclick="app.openForm('add-child')" class="w-full py-3.5 rounded border font-bold transition flex justify-between px-6 items-center" style="background-color: var(--theme-card); border-color: var(--theme-border); color: var(--theme-text);">
+                    <span class="tracking-widest">录入子嗣 (下一世)</span> <span style="color: var(--theme-border);">↳</span>
+                </button>
+                <button onclick="app.openForm('add-parent')" class="w-full py-3.5 rounded border font-bold transition flex justify-between px-6 items-center" style="background-color: var(--theme-card); border-color: var(--theme-border); color: var(--theme-text);">
+                    <span class="tracking-widest">追溯先祖 (上一世)</span> <span style="color: var(--theme-border);">↰</span>
+                </button>
+                <button onclick="app.openForm('edit-member')" class="w-full py-3.5 rounded border font-bold transition flex justify-between px-6 items-center" style="background-color: #F5EBE9; border-color: #E6B0AA; color: var(--theme-primary);">
+                    <span class="tracking-widest">修正小传</span> <span style="color: #E6B0AA;">✎</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 居中模态表单 -->
+    <div id="form-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="rounded shadow-2xl w-full max-w-sm overflow-hidden transform transition-all border" style="background-color: var(--theme-card); border-color: var(--theme-border);">
+            <div class="px-6 py-4 border-b flex justify-between items-center" style="border-color: var(--theme-border); background-color: var(--theme-bg);">
+                <h3 id="form-title" class="text-lg font-bold tracking-widest" style="color: var(--theme-text);">表单标题</h3>
+                <button onclick="app.closeAllModals()" class="text-2xl leading-none" style="color: #8D6E63;">&times;</button>
+            </div>
+            <div class="p-6">
+                <!-- 动态表单内容容器 -->
+                <div id="form-content" class="space-y-4"></div>
+                
+                <div class="mt-8 flex space-x-3">
+                    <button onclick="app.closeAllModals()" class="flex-1 py-2.5 rounded border font-bold tracking-widest" style="background-color: var(--theme-bg); border-color: var(--theme-border); color: var(--theme-text);">作罢</button>
+                    <button onclick="app.submitForm()" class="flex-1 py-2.5 rounded text-white font-bold tracking-widest shadow-sm" style="background-color: var(--theme-primary);">落笔确认</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+const db = {
+    currentUser: { id: 'u1', name: '我(修谱人)' }, 
+    
+    genealogies: [
+        { id: 'g1', name: '陇西李氏族谱', creator_user_id: 'u1', invite_code: '8A2B9C', created_at: '2023-10-01' }
+    ],
+    
+    members: [
+        { id: 'm1', genealogy_id: 'g1', name: '李渊', gender: 'M', parent_id: null, generation: 1 },
+        { id: 'm2', genealogy_id: 'g1', name: '李世民', gender: 'M', parent_id: 'm1', generation: 2 },
+        { id: 'm3', genealogy_id: 'g1', name: '平阳昭公主', gender: 'F', parent_id: 'm1', generation: 2 },
+        { id: 'm4', genealogy_id: 'g1', name: '李治', gender: 'M', parent_id: 'm2', generation: 3 },
+        { id: 'm5', genealogy_id: 'g1', name: '李泰', gender: 'M', parent_id: 'm2', generation: 3 },
+    ],
+    
+    requests: [
+        { id: 'req1', genealogy_id: 'g1', target_member_id: 'm3', change_type: 'edit', change_content: { name: '李秀宁' }, status: 'pending', applicant_name: '某宗亲' }
+    ]
+};
+
+const app = {
+    state: {
+        currentView: 'home',
+        activeGenealogyId: null,
+        activeMemberId: null,
+        currentFormType: null,
+    },
+
+    init() {
+        this.renderHome();
+        this.updateBadge();
+    },
+
+    switchView(viewId, param = null) {
+        document.querySelectorAll('.view-layer').forEach(el => el.classList.remove('active'));
+        document.getElementById(`view-${viewId}`).classList.add('active');
+        
+        document.querySelectorAll('.nav-item').forEach(el => el.style.color = '#8D6E63');
+        const navBtn = document.getElementById(`nav-${viewId}`);
+        if(navBtn) navBtn.style.color = 'var(--theme-primary)';
+
+        const btnBack = document.getElementById('btn-back');
+        const headerTitle = document.getElementById('header-title');
+
+        this.state.currentView = viewId;
+
+        if (viewId === 'home') {
+            headerTitle.innerText = '我的家谱';
+            btnBack.classList.add('hidden');
+            this.renderHome();
+        } else if (viewId === 'detail') {
+            this.state.activeGenealogyId = param;
+            const g = db.genealogies.find(g => g.id === param);
+            headerTitle.innerText = g.name;
+            document.getElementById('detail-invite-code').innerText = g.invite_code;
+            btnBack.classList.remove('hidden');
+            this.renderTree(param);
+        } else if (viewId === 'approval') {
+            headerTitle.innerText = '奏报核准';
+            btnBack.classList.add('hidden');
+            this.renderApprovals();
+        }
+    },
+
+    goBack() {
+        this.switchView('home');
+    },
+
+    renderHome() {
+        const listEl = document.getElementById('genealogy-list');
+        listEl.innerHTML = '';
+        
+        db.genealogies.forEach(g => {
+            const count = db.members.filter(m => m.genealogy_id === g.id).length;
+            const el = document.createElement('div');
+            el.className = 'p-4 rounded shadow-sm border flex justify-between items-center transition cursor-pointer active:opacity-80';
+            el.style.backgroundColor = 'var(--theme-card)';
+            el.style.borderColor = 'var(--theme-border)';
+            el.onclick = () => this.switchView('detail', g.id);
+            el.innerHTML = `
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded border flex items-center justify-center font-bold text-xl" style="background-color: var(--theme-bg); border-color: var(--theme-border); color: var(--theme-primary);">
+                        ${g.name.charAt(0)}
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold tracking-widest" style="color: var(--theme-text);">${g.name}</h3>
+                        <p class="text-xs mt-1" style="color: #8D6E63;">已录 ${count} 人 · 由我修撰</p>
+                    </div>
+                </div>
+                <div style="color: var(--theme-border);">❯</div>
+            `;
+            listEl.appendChild(el);
+        });
+    },
+
+    // 渲染树状图并添加折叠按钮
+    renderTree(genealogyId) {
+        const container = document.getElementById('tree-container');
+        container.innerHTML = '';
+        
+        const members = db.members.filter(m => m.genealogy_id === genealogyId);
+        if(members.length === 0) return;
+
+        const roots = members.filter(m => !m.parent_id);
+
+        const buildHTML = (node) => {
+            const children = members.filter(m => m.parent_id === node.id);
+            const hasChildren = children.length > 0;
+            
+            // 古风性别标识
+            const genderBg = node.gender === 'M' ? '#E3F2FD' : '#FCE4EC';
+            const genderColor = node.gender === 'M' ? '#1565C0' : '#C62828';
+            const genderText = node.gender === 'M' ? '男' : '女';
+            
+            let html = `
+                <div class="tree-node-item">
+                    <div class="relative inline-flex items-center">
+                        <!-- 树节点折叠按钮 -->
+                        ${hasChildren ? `
+                        <button onclick="app.toggleNode(event, '${node.id}')" id="toggle-${node.id}" class="absolute -left-[10px] z-20 w-[20px] h-[20px] rounded-sm flex items-center justify-center text-xs font-bold border pb-[2px] shadow-sm transition-colors active:bg-[#F2ECE4]" style="background-color: var(--theme-card); border-color: var(--theme-border); color: var(--theme-primary);">
+                            -
+                        </button>
+                        ` : ''}
+                        
+                        <!-- 成员信息卡片 -->
+                        <div onclick="app.openActionMenu('${node.id}')" class="flex items-center p-2.5 rounded shadow-sm border transition cursor-pointer z-10 relative ml-4 active:scale-[0.98]" style="background-color: var(--theme-card); border-color: var(--theme-border);">
+                            <div class="w-7 h-7 flex items-center justify-center mr-3 text-xs font-bold border opacity-90 shadow-inner" style="background-color: ${genderBg}; color: ${genderColor}; border-color: ${genderColor}; border-radius: 2px;">
+                                ${genderText}
+                            </div>
+                            <div>
+                                <div class="font-bold text-[15px] tracking-widest" style="color: var(--theme-text);">${node.name}</div>
+                                <div class="text-[10px] border inline-block px-1 rounded-sm mt-0.5" style="color: var(--theme-primary); border-color: #E6B0AA; background-color: #FDF2F1;">第 ${node.generation} 世</div>
+                            </div>
+                        </div>
+                    </div>
+            `;
+            
+            if (hasChildren) {
+                // 递归容器，加入ID用于折叠控制
+                html += `<div class="tree-children" id="children-${node.id}">`;
+                children.forEach(child => {
+                    html += buildHTML(child);
+                });
+                html += `</div>`;
+            }
+            html += `</div>`;
+            return html;
+        };
+
+        roots.forEach(root => {
+            container.innerHTML += buildHTML(root);
+        });
+    },
+
+    // 树节点折叠/展开控制
+    toggleNode(event, nodeId) {
+        event.stopPropagation(); // 阻止事件冒泡触发操作菜单
+        const childrenDiv = document.getElementById(`children-${nodeId}`);
+        const btn = document.getElementById(`toggle-${nodeId}`);
+        
+        if (childrenDiv) {
+            if (childrenDiv.classList.contains('hidden')) {
+                childrenDiv.classList.remove('hidden');
+                btn.innerText = '-';
+            } else {
+                childrenDiv.classList.add('hidden');
+                btn.innerText = '+';
+            }
+        }
+    },
+
+    renderApprovals() {
+        const listEl = document.getElementById('approval-list');
+        listEl.innerHTML = '';
+        const pendings = db.requests.filter(r => r.status === 'pending');
+        
+        if(pendings.length === 0) {
+            listEl.innerHTML = '<div class="text-center py-10 text-sm tracking-widest" style="color: #8D6E63;">族内安宁，暂无奏报</div>';
+            return;
+        }
+
+        pendings.forEach(req => {
+            const target = db.members.find(m => m.id === req.target_member_id);
+            const g = db.genealogies.find(g => g.id === req.genealogy_id);
+            
+            const el = document.createElement('div');
+            el.className = 'p-4 rounded shadow-sm border';
+            el.style.backgroundColor = 'var(--theme-card)';
+            el.style.borderColor = 'var(--theme-border)';
+            
+            let contentDesc = '';
+            if(req.change_type === 'edit') {
+                contentDesc = `呈请修正 <span class="font-bold" style="color: var(--theme-text);">${target.name}</span> 之记录为：<span class="font-bold border-b border-dashed pb-0.5" style="color: var(--theme-primary); border-color: var(--theme-primary);">${req.change_content.name}</span>`;
+            } else {
+                contentDesc = `呈请为家族添丁入谱`;
+            }
+
+            el.innerHTML = `
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <span class="text-xs px-2 py-0.5 rounded-sm font-bold border" style="background-color: #FDF2F1; color: var(--theme-primary); border-color: #E6B0AA;">待核准</span>
+                        <span class="text-xs ml-2" style="color: #8D6E63;">${g.name}</span>
+                    </div>
+                    <div class="text-xs" style="color: #8D6E63;">${req.applicant_name} 具禀</div>
+                </div>
+                <div class="text-sm mb-4 p-3 rounded border" style="background-color: var(--theme-bg); border-color: var(--theme-border); color: var(--theme-text);">
+                    ${contentDesc}
+                </div>
+                <div class="flex space-x-3">
+                    <button onclick="app.handleApproval('${req.id}', 'rejected')" class="flex-1 py-2 border rounded text-sm font-bold transition-colors active:bg-[#F2ECE4]" style="background-color: var(--theme-card); border-color: var(--theme-border); color: var(--theme-text);">驳回</button>
+                    <button onclick="app.handleApproval('${req.id}', 'approved')" class="flex-1 py-2 text-white rounded text-sm font-bold shadow-sm" style="background-color: var(--theme-primary);">准奏入谱</button>
+                </div>
+            `;
+            listEl.appendChild(el);
+        });
+        this.updateBadge();
+    },
+
+    updateBadge() {
+        const badge = document.getElementById('approval-badge');
+        const count = db.requests.filter(r => r.status === 'pending').length;
+        if(count > 0) {
+            badge.innerText = count;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    },
+
+    openActionMenu(memberId) {
+        this.state.activeMemberId = memberId;
+        const member = db.members.find(m => m.id === memberId);
+        
+        document.getElementById('action-target-name').innerText = member.name;
+        document.getElementById('action-target-desc').innerText = `第 ${member.generation} 世成员`;
+        
+        document.getElementById('modal-overlay').classList.add('open');
+        document.getElementById('action-drawer').classList.add('open');
+    },
+
+    closeAllModals() {
+        document.getElementById('modal-overlay').classList.remove('open');
+        document.getElementById('action-drawer').classList.remove('open');
+        
+        const formModal = document.getElementById('form-modal');
+        formModal.classList.add('hidden');
+        formModal.classList.remove('flex');
+    },
+
+    openModal(type) {
+        this.openForm(type);
+    },
+
+    openForm(type) {
+        document.getElementById('action-drawer').classList.remove('open');
+        document.getElementById('modal-overlay').classList.add('open');
+        
+        const formModal = document.getElementById('form-modal');
+        formModal.classList.remove('hidden');
+        formModal.classList.add('flex');
+        
+        const titleEl = document.getElementById('form-title');
+        const contentEl = document.getElementById('form-content');
+        this.state.currentFormType = type;
+
+        // 通用输入框样式
+        const inputClass = "w-full border rounded px-3 py-2.5 focus:outline-none transition-colors";
+        const inputStyle = "background-color: var(--theme-bg); border-color: var(--theme-border); color: var(--theme-text);";
+
+        let html = '';
+        if(type === 'create-genealogy') {
+            titleEl.innerText = '敬修新谱';
+            html = `
+                <div>
+                    <label class="block text-sm font-bold mb-1" style="color: var(--theme-text);">家族堂号/谱名</label>
+                    <input type="text" id="input-g-name" placeholder="例如：赵氏宗谱" class="${inputClass}" style="${inputStyle}">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-1 mt-4" style="color: var(--theme-text);">始祖尊讳</label>
+                    <input type="text" id="input-m-name" placeholder="输入第一世祖先姓名" class="${inputClass}" style="${inputStyle}">
+                </div>
+                <div class="mt-4">
+                    <label class="block text-sm font-bold mb-2" style="color: var(--theme-text);">始祖性别</label>
+                    <div class="flex space-x-6">
+                        <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="gender" value="M" checked class="accent-[#8E292C] w-4 h-4"> <span style="color: var(--theme-text);">男</span></label>
+                        <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="gender" value="F" class="accent-[#8E292C] w-4 h-4"> <span style="color: var(--theme-text);">女</span></label>
+                    </div>
+                </div>
+            `;
+        } 
+        else if (type === 'join-genealogy') {
+            titleEl.innerText = '输入字号加入';
+            html = `
+                <div>
+                    <label class="block text-sm font-bold mb-1" style="color: var(--theme-text);">请输入6位宗亲邀请码</label>
+                    <input type="text" id="input-code" placeholder="输入邀请码" class="${inputClass} font-mono text-center text-lg tracking-widest uppercase" style="${inputStyle}">
+                </div>
+            `;
+        }
+        else {
+            const member = db.members.find(m => m.id === this.state.activeMemberId);
+            let actionName = '';
+            let defaultName = '';
+            if (type === 'add-child') actionName = `为 [${member.name}] 录入子嗣`;
+            if (type === 'add-parent') actionName = `为 [${member.name}] 追溯先祖`;
+            if (type === 'edit-member') { actionName = `修正小传`; defaultName = member.name; }
+            
+            titleEl.innerText = actionName;
+            html = `
+                <div>
+                    <label class="block text-sm font-bold mb-1" style="color: var(--theme-text);">尊讳/姓名</label>
+                    <input type="text" id="input-m-name" value="${defaultName}" placeholder="输入真实姓名" class="${inputClass}" style="${inputStyle}">
+                </div>
+                <div class="mt-4">
+                    <label class="block text-sm font-bold mb-2" style="color: var(--theme-text);">性别</label>
+                    <div class="flex space-x-6">
+                        <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="gender" value="M" ${member && type==='edit-member' && member.gender==='M'?'checked':(!member || type!=='edit-member'?'checked':'')} class="accent-[#8E292C] w-4 h-4"> <span style="color: var(--theme-text);">男</span></label>
+                        <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="gender" value="F" ${member && type==='edit-member' && member.gender==='F'?'checked':''} class="accent-[#8E292C] w-4 h-4"> <span style="color: var(--theme-text);">女</span></label>
+                    </div>
+                </div>
+            `;
+            if(type === 'add-parent') {
+                html += `<div class="mt-4 text-xs p-2 rounded border leading-relaxed" style="background-color: #FFF8E1; color: #F57F17; border-color: #FFE082;">⚠️ 注意：追溯先祖将自动重新推算当前分支所有后裔的世代辈分。</div>`;
+            }
+        }
+        contentEl.innerHTML = html;
+    },
+
+    submitForm() {
+        const type = this.state.currentFormType;
+        const generateId = () => 'm' + Math.floor(Math.random() * 10000);
+
+        if (type === 'create-genealogy') {
+            const gName = document.getElementById('input-g-name').value;
+            const mName = document.getElementById('input-m-name').value;
+            const gender = document.querySelector('input[name="gender"]:checked').value;
+            if(!gName || !mName) return alert('请将信息填写完整');
+            
+            const newGId = 'g' + Date.now();
+            db.genealogies.push({ id: newGId, name: gName, creator_user_id: db.currentUser.id, invite_code: Math.random().toString(36).substr(2, 6).toUpperCase() });
+            db.members.push({ id: generateId(), genealogy_id: newGId, name: mName, gender: gender, parent_id: null, generation: 1 });
+            
+            this.closeAllModals();
+            this.switchView('detail', newGId);
+        } 
+        else if (type === 'join-genealogy') {
+            alert('字号核验成功，已呈请修谱人恩准。');
+            this.closeAllModals();
+        }
+        else {
+            const mName = document.getElementById('input-m-name').value;
+            const gender = document.querySelector('input[name="gender"]:checked').value;
+            if(!mName) return alert('姓名不能为空');
+
+            const currentMember = db.members.find(m => m.id === this.state.activeMemberId);
+            
+            if (type === 'add-child') {
+                db.members.push({
+                    id: generateId(),
+                    genealogy_id: currentMember.genealogy_id,
+                    name: mName,
+                    gender: gender,
+                    parent_id: currentMember.id,
+                    generation: currentMember.generation + 1
+                });
+            } 
+            else if (type === 'add-parent') {
+                const newParentId = generateId();
+                const newParentGeneration = currentMember.generation;
+
+                db.members.push({
+                    id: newParentId,
+                    genealogy_id: currentMember.genealogy_id,
+                    name: mName,
+                    gender: gender,
+                    parent_id: currentMember.parent_id,
+                    generation: newParentGeneration
+                });
+
+                currentMember.parent_id = newParentId;
+                
+                const updateDescendantsGeneration = (nodeId) => {
+                    const node = db.members.find(m => m.id === nodeId);
+                    if(node) {
+                        node.generation += 1;
+                        const children = db.members.filter(m => m.parent_id === nodeId);
+                        children.forEach(child => updateDescendantsGeneration(child.id));
+                    }
+                };
+                updateDescendantsGeneration(currentMember.id);
+            }
+            else if (type === 'edit-member') {
+                currentMember.name = mName;
+                currentMember.gender = gender;
+            }
+
+            this.closeAllModals();
+            this.renderTree(this.state.activeGenealogyId);
+        }
+    },
+
+    handleApproval(reqId, status) {
+        const req = db.requests.find(r => r.id === reqId);
+        if(!req) return;
+        
+        req.status = status;
+        
+        if(status === 'approved') {
+            if(req.change_type === 'edit') {
+                const target = db.members.find(m => m.id === req.target_member_id);
+                if(target) {
+                    Object.assign(target, req.change_content);
+                }
+            }
+            alert('已准奏，家谱更新完毕。');
+        } else {
+            alert('申请已被驳回。');
+        }
+        
+        this.renderApprovals();
+        if(this.state.currentView === 'detail') {
+            this.renderTree(this.state.activeGenealogyId);
+        }
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    app.init();
+});
+
+</script>
+</body>
+</html>

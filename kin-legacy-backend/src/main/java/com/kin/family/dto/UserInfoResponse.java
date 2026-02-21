@@ -1,6 +1,7 @@
 package com.kin.family.dto;
 
 import com.kin.family.enums.UserRole;
+import com.kin.family.enums.UserStatus;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -12,5 +13,6 @@ public class UserInfoResponse {
     private String avatar;
     private String phone;
     private UserRole role;
+    private UserStatus status;
     private LocalDateTime createTime;
 }

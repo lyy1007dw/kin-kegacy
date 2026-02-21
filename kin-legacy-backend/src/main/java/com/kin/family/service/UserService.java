@@ -19,5 +19,6 @@ public interface UserService {
     PageResult<UserInfoResponse> getUsersPaged(Integer page, Integer size);
     UserInfoResponse updateUser(Long userId, UserInfoResponse request);
     void disableUser(Long userId);
+    void enableUser(Long userId);
     Map<String, Object> getStatistics();
 }

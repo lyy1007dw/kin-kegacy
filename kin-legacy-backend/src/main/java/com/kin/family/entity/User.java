@@ -2,6 +2,7 @@ package com.kin.family.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import com.kin.family.enums.UserRole;
+import com.kin.family.enums.UserStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -34,6 +35,9 @@ public class User {
 
     @TableField(value = "role", typeHandler = EnumTypeHandler.class)
     private UserRole role;
+
+    @TableField(value = "status", typeHandler = EnumTypeHandler.class)
+    private UserStatus status;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

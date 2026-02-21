@@ -23,15 +23,22 @@ const request = (options) => {
             clearAuth()
             reject(new Error('未授权，请重新登录'))
           } else {
+            const errorMsg = res.data.message || '系统繁忙，请稍后重试'
             uni.showToast({
-              title: res.data.message || '系统繁忙，请稍后重试',
+              title: `业务异常: ${errorMsg}`,
               icon: 'none'
             })
-            reject(new Error(res.data.message || '系统繁忙'))
+            reject(new Error(errorMsg))
           }
         } else if (res.statusCode === 401) {
           clearAuth()
           reject(new Error('未授权，请重新登录'))
+        } else if (res.data && res.data.message) {
+          uni.showToast({
+            title: `业务异常: ${res.data.message}`,
+            icon: 'none'
+          })
+          reject(new Error(res.data.message))
         } else {
           uni.showToast({
             title: '网络错误',

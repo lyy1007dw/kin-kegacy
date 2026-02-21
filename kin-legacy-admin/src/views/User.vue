@@ -5,7 +5,7 @@ import {
   NForm, NFormItem, NInput, useMessage, useDialog, NPagination
 } from 'naive-ui'
 import type { DataTableColumns } from 'naive-ui'
-import { getUserList, updateUser, deleteUser } from '@/api/user'
+import { getUserList, updateUser, disableUser, enableUser } from '@/api/user'
 
 export interface User {
   id: number
@@ -13,6 +13,7 @@ export interface User {
   avatar: string
   phone: string
   role: string
+  status: string
   createTime: string
 }
 
@@ -48,6 +49,13 @@ const columns: DataTableColumns<User> = [
     align: 'center',
     render: (row) => h(NTag, { type: row.role === 'admin' ? 'error' : 'default', size: 'small' }, { default: () => row.role === 'admin' ? '管理员' : '普通用户' })
   },
+  { 
+    title: '状态', 
+    key: 'status',
+    width: 100,
+    align: 'center',
+    render: (row) => h(NTag, { type: row.status === 'disabled' ? 'error' : 'success', size: 'small' }, { default: () => row.status === 'disabled' ? '已禁用' : '正常' })
+  },
   { title: '创建时间', key: 'createTime', width: 180 },
   {
     title: '操作',
@@ -65,10 +73,10 @@ const columns: DataTableColumns<User> = [
           }, { default: () => '编辑' }),
           h(NButton, { 
             size: 'small', 
-            type: 'error',
+            type: row.status === 'disabled' ? 'success' : 'error',
             disabled: isAdminUser,
-            onClick: () => handleDelete(row)
-          }, { default: () => '禁用' })
+            onClick: () => row.status === 'disabled' ? handleEnable(row) : handleDisable(row)
+          }, { default: () => row.status === 'disabled' ? '启用' : '禁用' })
         ]
       })
     }
@@ -132,7 +140,7 @@ const handleUpdate = async () => {
   }
 }
 
-const handleDelete = (row: User) => {
+const handleDisable = (row: User) => {
   dialog.warning({
     title: '确认禁用',
     content: `确定要禁用用户 "${row.nickname}" 吗？`,
@@ -140,11 +148,29 @@ const handleDelete = (row: User) => {
     negativeText: '取消',
     onPositiveClick: async () => {
       try {
-        await deleteUser(row.id)
+        await disableUser(row.id)
         message.success('禁用成功')
         fetchData()
       } catch (error: any) {
         message.error(error.message || '禁用失败')
+      }
+    }
+  })
+}
+
+const handleEnable = (row: User) => {
+  dialog.warning({
+    title: '确认启用',
+    content: `确定要启用用户 "${row.nickname}" 吗？`,
+    positiveText: '确定',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      try {
+        await enableUser(row.id)
+        message.success('启用成功')
+        fetchData()
+      } catch (error: any) {
+        message.error(error.message || '启用失败')
       }
     }
   })

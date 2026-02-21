@@ -29,3 +29,19 @@ npm-debug.log*
 
 # opencode
 .opencode/
+
+# Backend config (sensitive)
+kin-legacy-backend/src/main/resources/application-dev.yml
+kin-legacy-backend/src/main/resources/application-prod.yml
+
+# Java compile output
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd

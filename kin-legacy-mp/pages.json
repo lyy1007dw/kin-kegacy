@@ -4,7 +4,7 @@
       "path": "pages/login/login",
       "style": {
         "navigationBarTitleText": "登录",
-        "navigationBarBackgroundColor": "#FFFFFF",
+        "navigationBarBackgroundColor": "#FBF9F6",
         "navigationBarTextStyle": "black",
         "enablePullDownRefresh": false
       }
@@ -13,7 +13,7 @@
       "path": "pages/index/index",
       "style": {
         "navigationBarTitleText": "我的家谱",
-        "navigationBarBackgroundColor": "#FFFFFF",
+        "navigationBarBackgroundColor": "#FBF9F6",
         "navigationBarTextStyle": "black",
         "enablePullDownRefresh": false
       }
@@ -22,7 +22,7 @@
       "path": "pages/tree/tree",
       "style": {
         "navigationBarTitleText": "家谱树",
-        "navigationBarBackgroundColor": "#FFFFFF",
+        "navigationBarBackgroundColor": "#FBF9F6",
         "navigationBarTextStyle": "black",
         "enablePullDownRefresh": false
       }
@@ -30,8 +30,8 @@
     {
       "path": "pages/approval/approval",
       "style": {
-        "navigationBarTitleText": "审批中心",
-        "navigationBarBackgroundColor": "#FFFFFF",
+        "navigationBarTitleText": "奏报核准",
+        "navigationBarBackgroundColor": "#FBF9F6",
         "navigationBarTextStyle": "black",
         "enablePullDownRefresh": true
       }
@@ -40,7 +40,7 @@
       "path": "pages/profile/profile",
       "style": {
         "navigationBarTitleText": "个人中心",
-        "navigationBarBackgroundColor": "#FFFFFF",
+        "navigationBarBackgroundColor": "#FBF9F6",
         "navigationBarTextStyle": "black",
         "enablePullDownRefresh": false
       }
@@ -49,19 +49,19 @@
   "globalStyle": {
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "家谱",
-    "navigationBarBackgroundColor": "#FFFFFF",
-    "backgroundColor": "#F9FAFB",
+    "navigationBarBackgroundColor": "#FBF9F6",
+    "backgroundColor": "#F2ECE4",
     "backgroundTextStyle": "dark"
   },
   "tabBar": {
-    "color": "#9CA3AF",
-    "selectedColor": "#8B4513",
+    "color": "#8D6E63",
+    "selectedColor": "#8E292C",
     "borderStyle": "white",
-    "backgroundColor": "#FFFFFF",
+    "backgroundColor": "#FBF9F6",
     "list": [
       {
         "pagePath": "pages/index/index",
-        "text": "首页",
+        "text": "宗祠",
         "iconPath": "static/tabbar/home.png",
         "selectedIconPath": "static/tabbar/home-active.png"
       },
@@ -73,7 +73,7 @@
       },
       {
         "pagePath": "pages/approval/approval",
-        "text": "审批",
+        "text": "奏报",
         "iconPath": "static/tabbar/approval.png",
         "selectedIconPath": "static/tabbar/approval-active.png"
       },

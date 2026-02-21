@@ -3,24 +3,30 @@ package com.kin.family.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.kin.family.config.WeChatConfig;
 import com.kin.family.dto.LoginResponse;
 import com.kin.family.dto.PageResult;
 import com.kin.family.dto.UserInfoResponse;
 import com.kin.family.dto.WxLoginRequest;
 import com.kin.family.entity.User;
 import com.kin.family.enums.UserRole;
+import com.kin.family.enums.UserStatus;
 import com.kin.family.exception.BusinessException;
 import com.kin.family.mapper.UserMapper;
 import com.kin.family.service.UserService;
 import com.kin.family.util.UserContext;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -29,6 +35,7 @@ public class UserServiceImpl implements UserService {
     private final com.kin.family.mapper.FamilyMapper familyMapper;
     private final com.kin.family.mapper.FamilyMemberMapper memberMapper;
     private final com.kin.family.mapper.JoinRequestMapper joinRequestMapper;
+    private final WeChatConfig weChatConfig;
 
     @Override
     public LoginResponse wxLogin(WxLoginRequest request) {
@@ -36,7 +43,11 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException("code不能为空");
         }
 
-        String openid = "wx_" + request.getCode();
+        String openid = getOpenidFromWechat(request.getCode());
+        if (openid == null) {
+            throw new BusinessException("微信登录失败，请重试");
+        }
+
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(User::getOpenid, openid);
         User user = userMapper.selectOne(wrapper);
@@ -46,8 +57,13 @@ public class UserServiceImpl implements UserService {
                     .openid(openid)
                     .nickname("用户" + request.getCode().substring(0, 4))
                     .role(UserRole.user)
+                    .status(UserStatus.normal)
                     .build();
             userMapper.insert(user);
+        }
+
+        if (user.getStatus() == UserStatus.disabled) {
+            throw new BusinessException("该账号已被禁用，请联系管理员");
         }
 
         String token = UUID.randomUUID().toString().replace("-", "");
@@ -59,6 +75,42 @@ public class UserServiceImpl implements UserService {
         UserContext.setUserId(user.getId());
         
         return response;
+    }
+
+    private String getOpenidFromWechat(String code) {
+        try {
+            String url = String.format(
+                "https://api.weixin.qq.com/sns/jscode2session?appid=%s&secret=%s&js_code=%s&grant_type=authorization_code",
+                weChatConfig.getAppid(),
+                weChatConfig.getSecret(),
+                code
+            );
+            RestTemplate restTemplate = new RestTemplate();
+            String responseStr = restTemplate.getForObject(url, String.class);
+            
+            log.info("微信登录响应: {}", responseStr);
+            
+            ObjectMapper objectMapper = new ObjectMapper();
+            @SuppressWarnings("unchecked")
+            Map<String, Object> response = objectMapper.readValue(responseStr, Map.class);
+            
+            if (response != null) {
+                if (response.get("openid") != null) {
+                    return (String) response.get("openid");
+                }
+                if (response.get("errcode") != null) {
+                    Integer errcode = (Integer) response.get("errcode");
+                    String errmsg = (String) response.get("errmsg");
+                    throw new BusinessException("微信登录失败: " + errmsg + " (code: " + errcode + ")");
+                }
+            }
+            throw new BusinessException("微信登录失败: 未获取到openid");
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("微信登录异常", e);
+            throw new BusinessException("微信登录失败: " + e.getMessage());
+        }
     }
 
     @Override
@@ -81,6 +133,10 @@ public class UserServiceImpl implements UserService {
         // 简单密码验证（生产环境应加密存储和验证）
         if (!password.equals(user.getPassword())) {
             throw new BusinessException("密码错误");
+        }
+
+        if (user.getStatus() == UserStatus.disabled) {
+            throw new BusinessException("该账号已被禁用，请联系管理员");
         }
 
         String token = UUID.randomUUID().toString().replace("-", "");
@@ -170,11 +226,23 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException("用户不存在");
         }
 
-        if (user.getId() == 1) {
+        if (user.getRole() == UserRole.admin) {
             throw new BusinessException("不能禁用管理员用户");
         }
 
-        userMapper.deleteById(userId);
+        user.setStatus(UserStatus.disabled);
+        userMapper.updateById(user);
+    }
+
+    @Override
+    public void enableUser(Long userId) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+
+        user.setStatus(UserStatus.normal);
+        userMapper.updateById(user);
     }
 
     @Override
@@ -211,6 +279,7 @@ public class UserServiceImpl implements UserService {
         response.setAvatar(user.getAvatar());
         response.setPhone(user.getPhone());
         response.setRole(user.getRole());
+        response.setStatus(user.getStatus());
         response.setCreateTime(user.getCreateTime());
         return response;
     }

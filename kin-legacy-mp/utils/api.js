@@ -3,7 +3,6 @@ import { get, post, put, del } from './request'
 export default {
   auth: {
     wxLogin: (code) => post('/auth/wx-login', { code }),
-    login: (username, password) => post('/auth/login', { username, password }),
     getCurrentUser: () => get('/auth/me'),
     logout: () => post('/auth/logout')
   },
@@ -37,7 +36,6 @@ export default {
 
   user: {
     getCurrent: () => get('/user/me'),
-    update: (id, data) => put(`/user/${id}`, data),
-    delete: (id) => del(`/user/${id}`)
+    update: (id, data) => put(`/user/${id}`, data)
   }
 }

@@ -7,6 +7,7 @@ export interface User {
   avatar: string
   phone: string
   role: string
+  status: string
   createTime: string
 }
 
@@ -18,6 +19,10 @@ export const updateUser = (id: number, data: { nickname?: string; phone?: string
   return request.put(`/user/${id}`, data)
 }
 
-export const deleteUser = (id: number) => {
-  return request.delete(`/user/${id}`)
+export const disableUser = (id: number) => {
+  return request.put(`/user/${id}/disable`)
+}
+
+export const enableUser = (id: number) => {
+  return request.put(`/user/${id}/enable`)
 }

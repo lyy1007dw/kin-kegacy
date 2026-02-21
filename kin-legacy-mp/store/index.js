@@ -70,17 +70,6 @@ const store = createStore({
       }
     },
 
-    async login({ commit }, { username, password }) {
-      try {
-        const res = await api.auth.login(username, password)
-        commit('SET_TOKEN', res.token)
-        commit('SET_USER_INFO', res.user)
-        return res
-      } catch (error) {
-        throw error
-      }
-    },
-
     async getUserInfo({ commit }) {
       try {
         const res = await api.auth.getCurrentUser()

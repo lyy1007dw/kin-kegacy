@@ -1,31 +1,31 @@
 <template>
-  <view class="page-container">
-    <view class="user-card">
-      <view class="user-avatar">
-        <text class="avatar-text">{{ userInfo && userInfo.nickname ? userInfo.nickname.charAt(0) : '?' }}</text>
+  <view class="jpu-page-container">
+    <view class="jpu-user-card">
+      <view class="jpu-user-avatar">
+        <text class="jpu-avatar-text">{{ userInfo && userInfo.nickname ? userInfo.nickname.charAt(0) : '?' }}</text>
       </view>
-      <view class="user-info">
-        <text class="user-name">{{ userInfo && userInfo.nickname || '未登录' }}</text>
-        <text class="user-id">ID: {{ userInfo && userInfo.id || '---' }}</text>
-      </view>
-    </view>
-
-    <view class="menu-card">
-      <view class="menu-item" @click="navigateTo('/pages/settings/settings')">
-        <text class="menu-text">账号设置</text>
-        <text class="menu-arrow">→</text>
-      </view>
-      <view class="menu-item" @click="navigateTo('/pages/about/about')">
-        <text class="menu-text">关于我们</text>
-        <text class="menu-arrow">→</text>
-      </view>
-      <view class="menu-item logout" @click="handleLogout">
-        <text class="menu-text logout-text">退出登录</text>
+      <view class="jpu-user-info">
+        <text class="jpu-user-name">{{ userInfo && userInfo.nickname || '未登录' }}</text>
+        <text class="jpu-user-id">ID: {{ userInfo && userInfo.id || '---' }}</text>
       </view>
     </view>
 
-    <view class="version-info">
-      <text class="version-text">家谱 MVP v1.0.0</text>
+    <view class="jpu-menu-card">
+      <view class="jpu-menu-item" @click="navigateTo('/pages/settings/settings')">
+        <text class="jpu-menu-text">账号设置</text>
+        <text class="jpu-menu-arrow">❯</text>
+      </view>
+      <view class="jpu-menu-item" @click="navigateTo('/pages/about/about')">
+        <text class="jpu-menu-text">关于我们</text>
+        <text class="jpu-menu-arrow">❯</text>
+      </view>
+      <view class="jpu-menu-item jpu-logout" @click="handleLogout">
+        <text class="jpu-menu-text jpu-logout-text">退出登录</text>
+      </view>
+    </view>
+
+    <view class="jpu-version-info">
+      <text class="jpu-version-text">家谱 v1.0.0</text>
     </view>
   </view>
 </template>
@@ -71,42 +71,43 @@ export default {
 </script>
 
 <style scoped>
-.page-container {
+.jpu-page-container {
   min-height: 100vh;
-  background: linear-gradient(180deg, #FFFBF5 0%, #F9FAFB 100%);
+  background-color: var(--theme-bg);
   padding: 32rpx;
 }
 
-.user-card {
+.jpu-user-card {
   display: flex;
   align-items: center;
-  background-color: #FFFFFF;
+  background-color: var(--theme-card);
+  border: 2rpx solid var(--theme-border);
   padding: 32rpx;
-  border-radius: 20rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+  border-radius: 12rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
   margin-bottom: 32rpx;
 }
 
-.user-avatar {
+.jpu-user-avatar {
   width: 112rpx;
   height: 112rpx;
   border-radius: 50%;
-  background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+  background-color: var(--theme-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-right: 28rpx;
-  box-shadow: 0 4rpx 16rpx rgba(139, 69, 19, 0.2);
+  box-shadow: 0 4rpx 16rpx rgba(142, 41, 44, 0.2);
 }
 
-.avatar-text {
+.jpu-avatar-text {
   font-size: 48rpx;
-  font-weight: 600;
+  font-weight: bold;
   color: #FFFFFF;
   letter-spacing: 4rpx;
 }
 
-.user-info {
+.jpu-user-info {
   display: flex;
   flex-direction: column;
   gap: 8rpx;
@@ -114,64 +115,68 @@ export default {
   flex: 1;
 }
 
-.user-name {
+.jpu-user-name {
   font-size: 36rpx;
-  font-weight: 600;
-  color: #1F2937;
+  font-weight: bold;
+  color: var(--theme-text);
+  letter-spacing: 4rpx;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.user-id {
+.jpu-user-id {
   font-size: 26rpx;
-  color: #6B7280;
+  color: #8D6E63;
 }
 
-.menu-card {
-  background-color: #FFFFFF;
-  border-radius: 20rpx;
+.jpu-menu-card {
+  background-color: var(--theme-card);
+  border: 2rpx solid var(--theme-border);
+  border-radius: 12rpx;
   overflow: hidden;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
 }
 
-.menu-item {
+.jpu-menu-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 32rpx;
-  border-bottom: 2rpx solid #F3F4F6;
+  border-bottom: 2rpx solid var(--theme-border);
 }
 
-.menu-item:last-child {
+.jpu-menu-item:last-child {
   border-bottom: none;
 }
 
-.menu-item:active {
-  background-color: #F9FAFB;
+.jpu-menu-item:active {
+  background-color: var(--theme-bg);
 }
 
-.menu-text {
+.jpu-menu-text {
   font-size: 30rpx;
-  color: #1F2937;
+  font-weight: bold;
+  letter-spacing: 4rpx;
+  color: var(--theme-text);
 }
 
-.menu-arrow {
+.jpu-menu-arrow {
   font-size: 28rpx;
-  color: #D1D5DB;
+  color: var(--theme-border);
 }
 
-.logout-text {
-  color: #DC2626;
+.jpu-logout-text {
+  color: var(--theme-primary);
 }
 
-.version-info {
+.jpu-version-info {
   text-align: center;
   margin-top: 120rpx;
 }
 
-.version-text {
+.jpu-version-text {
   font-size: 24rpx;
-  color: #D1D5DB;
+  color: var(--theme-border);
 }
 </style>

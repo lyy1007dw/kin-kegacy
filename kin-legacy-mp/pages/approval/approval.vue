@@ -1,56 +1,50 @@
 <template>
-  <view class="page-container">
-    <view v-if="pendingApprovals.length === 0" class="empty-state">
-      <view class="empty-icon-wrap">
-        <text class="empty-icon-text">审</text>
+  <view class="jpu-page-container">
+    <view v-if="pendingApprovals.length === 0" class="jpu-empty-state">
+      <view class="jpu-empty-icon-wrap">
+        <text class="jpu-empty-icon-text">审</text>
       </view>
-      <text class="empty-text">暂无待审批事项</text>
+      <text class="jpu-empty-text">族内安宁，暂无奏报</text>
     </view>
 
-    <view v-else class="approval-list">
+    <view v-else class="jpu-approval-list">
+      <!-- 提示栏 -->
+      <view class="jpu-tip-warning">
+        <text class="jpu-tip-bold">编修提示：</text>
+        <text>族人提交的"信息修正"或"添丁"申请将在此处汇总，须由修谱人核准方可入谱。</text>
+      </view>
+
       <view 
-        class="approval-card" 
+        class="jpu-approval-card" 
         v-for="approval in pendingApprovals" 
         :key="approval.id"
-        :class="{ 'card-leaving': leavingId === approval.id }"
+        :class="{ 'jpu-card-leaving': leavingId === approval.id }"
       >
-        <view class="approval-header">
-          <view class="approval-type" :class="'type-' + approval.type">
-            <text class="type-text">{{ getTypeText(approval.type) }}</text>
+        <view class="jpu-approval-header">
+          <view class="jpu-approval-left">
+            <text class="jpu-tag-danger">待核准</text>
+            <text class="jpu-approval-family">{{ approval.familyName }}</text>
           </view>
-          <text class="approval-time">{{ formatTime(approval.createTime) }}</text>
+          <text class="jpu-approval-applicant">{{ approval.applicantName }} 具禀</text>
         </view>
 
-        <view class="approval-body">
-          <view class="approval-row">
-            <text class="row-label">申请人</text>
-            <text class="row-value">{{ approval.applicantName }}</text>
+        <view class="jpu-approval-content">
+          <view v-if="approval.type === 'join'">
+            呈请为家族添丁入谱
           </view>
-          
-          <view v-if="approval.type === 'join'" class="approval-row">
-            <text class="row-label">关系说明</text>
-            <text class="row-value">{{ approval.relationDesc }}</text>
-          </view>
-          
-          <view v-else class="approval-change">
-            <view class="change-row">
-              <text class="change-label">修改字段</text>
-              <text class="change-value">{{ getFieldName(approval.fieldName) }}</text>
-            </view>
-            <view class="change-row">
-              <text class="change-label">原内容</text>
-              <text class="change-old">{{ approval.oldValue || '无' }}</text>
-            </view>
-            <view class="change-row">
-              <text class="change-label">新内容</text>
-              <text class="change-new">{{ approval.newValue }}</text>
-            </view>
+          <view v-else>
+            呈请修正 <text class="jpu-text-bold">{{ approval.targetName }}</text> 之记录为：
+            <text class="jpu-text-highlight jpu-text-underline">{{ approval.newValue }}</text>
           </view>
         </view>
 
-        <view class="approval-actions">
-          <view class="btn-reject" @click="handleApproval(approval.id, 'reject')">拒绝</view>
-          <view class="btn-approve" @click="handleApproval(approval.id, 'approve')">同意</view>
+        <view class="jpu-approval-actions">
+          <view class="jpu-btn-gray" @click="handleApproval(approval.id, 'reject')">
+            <text>驳回</text>
+          </view>
+          <view class="jpu-btn-primary" @click="handleApproval(approval.id, 'approve')">
+            <text>准奏入谱</text>
+          </view>
         </view>
       </view>
     </view>
@@ -94,43 +88,6 @@ export default {
       })
     },
 
-    getTypeText(type) {
-      if (type === 'join') return '加入申请'
-      if (type === 'modify') return '修改申请'
-      return '申请'
-    },
-
-    getFieldName(fieldName) {
-      var fieldMap = {
-        'name': '姓名',
-        'birthDate': '出生日期',
-        'bio': '简介',
-        'avatar': '头像'
-      }
-      return fieldMap[fieldName] || fieldName
-    },
-
-    formatTime(time) {
-      if (!time) return ''
-      var date = new Date(time)
-      var now = new Date()
-      var diff = now - date
-      
-      var minutes = Math.floor(diff / 60000)
-      var hours = Math.floor(diff / 3600000)
-      var days = Math.floor(diff / 86400000)
-      
-      if (minutes < 60) {
-        return minutes + '分钟前'
-      } else if (hours < 24) {
-        return hours + '小时前'
-      } else if (days < 30) {
-        return days + '天前'
-      } else {
-        return (date.getMonth() + 1) + '月' + date.getDate() + '日'
-      }
-    },
-
     handleApproval(id, action) {
       var self = this
       this.leavingId = id
@@ -141,7 +98,7 @@ export default {
           action: action === 'approve' ? 'approve' : 'reject' 
         }).then(function() {
           uni.showToast({ 
-            title: action === 'approve' ? '已同意' : '已拒绝', 
+            title: action === 'approve' ? '已准奏' : '已驳回', 
             icon: 'success' 
           })
           
@@ -159,13 +116,14 @@ export default {
 </script>
 
 <style scoped>
-.page-container {
+.jpu-page-container {
   min-height: 100vh;
-  background: linear-gradient(180deg, #FFFBF5 0%, #F9FAFB 100%);
+  background-color: var(--theme-bg);
   padding: 32rpx;
 }
 
-.empty-state {
+/* 空状态 */
+.jpu-empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -173,195 +131,175 @@ export default {
   height: 60vh;
 }
 
-.empty-icon-wrap {
+.jpu-empty-icon-wrap {
   width: 140rpx;
   height: 140rpx;
-  border-radius: 28rpx;
-  background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+  border-radius: 16rpx;
+  background-color: var(--theme-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 32rpx;
-  box-shadow: 0 8rpx 24rpx rgba(139, 69, 19, 0.2);
+  box-shadow: 0 8rpx 24rpx rgba(142, 41, 44, 0.2);
 }
 
-.empty-icon-text {
+.jpu-empty-icon-text {
   font-size: 64rpx;
   color: #FFFFFF;
-  font-weight: 600;
+  font-weight: bold;
   letter-spacing: 8rpx;
 }
 
-.empty-text {
+.jpu-empty-text {
   font-size: 28rpx;
-  color: #9CA3AF;
+  color: #8D6E63;
+  letter-spacing: 4rpx;
 }
 
-.approval-list {
+/* 审批列表 */
+.jpu-approval-list {
   display: flex;
   flex-direction: column;
   gap: 24rpx;
 }
 
-.approval-card {
-  background-color: #FFFFFF;
-  border-radius: 20rpx;
-  padding: 28rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+/* 提示区 */
+.jpu-tip-warning {
+  background-color: #FFF8E1;
+  border: 2rpx solid #FFE082;
+  border-radius: 8rpx;
+  padding: 20rpx 24rpx;
+  font-size: 24rpx;
+  color: #8D6E63;
+  line-height: 1.6;
+}
+
+.jpu-tip-bold {
+  color: #F57F17;
+  font-weight: bold;
+}
+
+/* 审批卡片 */
+.jpu-approval-card {
+  background-color: var(--theme-card);
+  border: 2rpx solid var(--theme-border);
+  border-radius: 12rpx;
+  padding: 32rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
   transition: all 0.3s;
 }
 
-.card-leaving {
+.jpu-card-leaving {
   opacity: 0;
   transform: translateX(-40rpx);
 }
 
-.approval-header {
+.jpu-approval-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20rpx;
 }
 
-.approval-type {
-  padding: 10rpx 20rpx;
-  border-radius: 20rpx;
+.jpu-approval-left {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
 }
 
-.type-join {
-  background-color: #EFF6FF;
-}
-
-.type-join .type-text {
-  color: #2563EB;
-}
-
-.type-modify {
-  background-color: #FFF7ED;
-}
-
-.type-modify .type-text {
-  color: #EA580C;
-}
-
-.type-text {
-  font-size: 26rpx;
-  font-weight: 500;
-}
-
-.approval-time {
+.jpu-tag-danger {
+  display: inline-block;
+  background-color: #FDF2F1;
+  border: 2rpx solid #E6B0AA;
+  color: var(--theme-primary);
   font-size: 24rpx;
-  color: #9CA3AF;
+  font-weight: bold;
+  padding: 6rpx 16rpx;
+  border-radius: 4rpx;
 }
 
-.approval-body {
-  margin-bottom: 20rpx;
+.jpu-approval-family {
+  font-size: 24rpx;
+  color: #8D6E63;
 }
 
-.approval-row {
-  display: flex;
-  align-items: flex-start;
-  margin-bottom: 16rpx;
+.jpu-approval-applicant {
+  font-size: 24rpx;
+  color: #8D6E63;
 }
 
-.approval-row:last-child {
-  margin-bottom: 0;
-}
-
-.row-label {
-  width: 140rpx;
-  font-size: 28rpx;
-  color: #6B7280;
-  flex-shrink: 0;
-}
-
-.row-value {
-  flex: 1;
-  font-size: 28rpx;
-  font-weight: 500;
-  color: #1F2937;
-  word-break: break-all;
-}
-
-.approval-change {
-  background-color: #F9FAFB;
-  border-radius: 12rpx;
+.jpu-approval-content {
+  background-color: var(--theme-bg);
+  border: 2rpx solid var(--theme-border);
+  border-radius: 8rpx;
   padding: 20rpx;
+  margin-bottom: 20rpx;
+  font-size: 28rpx;
+  color: var(--theme-text);
+  line-height: 1.6;
 }
 
-.change-row {
-  display: flex;
-  align-items: flex-start;
-  margin-bottom: 12rpx;
+.jpu-text-bold {
+  font-weight: bold;
+  color: var(--theme-text);
 }
 
-.change-row:last-child {
-  margin-bottom: 0;
+.jpu-text-highlight {
+  color: var(--theme-primary);
+  font-weight: bold;
 }
 
-.change-label {
-  width: 140rpx;
-  font-size: 26rpx;
-  color: #6B7280;
-  flex-shrink: 0;
+.jpu-text-underline {
+  border-bottom: 2rpx dashed var(--theme-primary);
+  padding-bottom: 2rpx;
 }
 
-.change-value {
-  font-size: 26rpx;
-  font-weight: 500;
-  color: #1F2937;
-}
-
-.change-old {
-  font-size: 26rpx;
-  color: #9CA3AF;
-  word-break: break-all;
-}
-
-.change-new {
-  font-size: 26rpx;
-  font-weight: 600;
-  color: #8B4513;
-  word-break: break-all;
-}
-
-.approval-actions {
+.jpu-approval-actions {
   display: flex;
   gap: 24rpx;
   padding-top: 20rpx;
-  border-top: 2rpx solid #F3F4F6;
+  border-top: 2rpx solid var(--theme-border);
 }
 
-.btn-reject {
+/* 按钮 */
+.jpu-btn-gray {
   flex: 1;
-  height: 88rpx;
-  line-height: 88rpx;
-  border: 2rpx solid #E5E7EB;
-  border-radius: 44rpx;
+  background-color: var(--theme-card);
+  border: 2rpx solid var(--theme-border);
+  border-radius: 8rpx;
+  padding: 24rpx;
   text-align: center;
-  font-size: 30rpx;
-  font-weight: 500;
-  color: #4B5563;
 }
 
-.btn-reject:active {
-  background-color: #F3F4F6;
+.jpu-btn-gray text {
+  font-size: 28rpx;
+  font-weight: bold;
+  letter-spacing: 4rpx;
+  color: var(--theme-text);
 }
 
-.btn-approve {
+.jpu-btn-gray:active {
+  background-color: var(--theme-bg);
+}
+
+.jpu-btn-primary {
   flex: 1;
-  height: 88rpx;
-  line-height: 88rpx;
-  background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
-  border-radius: 44rpx;
+  background-color: var(--theme-primary);
+  border: 2rpx solid #722023;
+  border-radius: 8rpx;
+  padding: 24rpx;
   text-align: center;
-  font-size: 30rpx;
-  font-weight: 500;
+  box-shadow: 0 4rpx 12rpx rgba(142, 41, 44, 0.2);
+}
+
+.jpu-btn-primary text {
+  font-size: 28rpx;
+  font-weight: bold;
+  letter-spacing: 4rpx;
   color: #FFFFFF;
-  box-shadow: 0 4rpx 12rpx rgba(139, 69, 19, 0.2);
 }
 
-.btn-approve:active {
+.jpu-btn-primary:active {
   opacity: 0.9;
 }
 </style>
