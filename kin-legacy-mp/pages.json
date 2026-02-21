@@ -3,7 +3,7 @@
     {
       "path": "pages/login/login",
       "style": {
-        "navigationBarTitleText": "登录",
+        "navigationBarTitleText": "慎重追远",
         "navigationBarBackgroundColor": "#FBF9F6",
         "navigationBarTextStyle": "black",
         "enablePullDownRefresh": false
@@ -21,7 +21,7 @@
     {
       "path": "pages/tree/tree",
       "style": {
-        "navigationBarTitleText": "家谱树",
+        "navigationBarTitleText": "族谱树",
         "navigationBarBackgroundColor": "#FBF9F6",
         "navigationBarTextStyle": "black",
         "enablePullDownRefresh": false
@@ -48,7 +48,7 @@
   ],
   "globalStyle": {
     "navigationBarTextStyle": "black",
-    "navigationBarTitleText": "家谱",
+    "navigationBarTitleText": "慎重追远",
     "navigationBarBackgroundColor": "#FBF9F6",
     "backgroundColor": "#F2ECE4",
     "backgroundTextStyle": "dark"

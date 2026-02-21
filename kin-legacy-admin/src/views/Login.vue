@@ -42,8 +42,8 @@ const handleLogin = async () => {
     
     <div class="login-content">
       <div class="login-header">
-        <h1 class="login-title">家谱传承</h1>
-        <p class="login-subtitle">Kin Legacy Management System</p>
+        <h1 class="login-title">慎重追远</h1>
+        <p class="login-subtitle">家谱管理后台</p>
       </div>
       
       <NCard class="login-card">
@@ -89,7 +89,7 @@ const handleLogin = async () => {
       </NCard>
       
       <div class="login-footer">
-        <p>传承家族记忆 · 记录世世代代</p>
+        <p>慎终追远 · 民德归厚</p>
       </div>
     </div>
   </div>

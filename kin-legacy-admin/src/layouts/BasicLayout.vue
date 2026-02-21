@@ -58,10 +58,10 @@ const toggleTheme = () => {
     >
       <div class="logo-container">
         <div v-if="!collapsed" class="logo-text">
-          <span class="logo-title">家谱传承</span>
-          <span class="logo-subtitle">Kin Legacy</span>
+          <span class="logo-title">慎重追远</span>
+          <span class="logo-subtitle">家谱管理</span>
         </div>
-        <div v-else class="logo-text-collapsed">家</div>
+        <div v-else class="logo-text-collapsed">追</div>
       </div>
       <NMenu
         :collapsed="collapsed"
@@ -74,7 +74,7 @@ const toggleTheme = () => {
       />
       <div v-if="!collapsed" class="sidebar-footer">
         <div class="footer-decoration"></div>
-        <p class="footer-text">传承家族记忆</p>
+        <p class="footer-text">慎终追远</p>
       </div>
     </NLayoutSider>
 
@@ -83,7 +83,7 @@ const toggleTheme = () => {
         <div class="header-left">
           <h1 class="header-title">{{ route.meta.title }}</h1>
           <div class="header-breadcrumb">
-            <span>家谱管理系统</span>
+            <span>慎重追远</span>
             <span class="separator">/</span>
             <span class="current">{{ route.meta.title }}</span>
           </div>

@@ -2,9 +2,9 @@
   <view class="jpu-login-container">
     <view class="jpu-login-header">
       <view class="jpu-logo-wrap">
-        <text class="jpu-logo-text">家谱</text>
+        <text class="jpu-logo-text">追远</text>
       </view>
-      <text class="jpu-slogan">记录家族传承 延续血脉亲情</text>
+      <text class="jpu-slogan">慎终追远 · 民德归厚</text>
     </view>
 
     <view class="jpu-login-form">
