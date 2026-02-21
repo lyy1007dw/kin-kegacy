@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kin.family.mapper.ApprovalMapper">
+
+    <select id="getApprovalsByFamilyId" resultType="com.kin.family.dto.ApprovalResponse">
+        SELECT * FROM (
+            SELECT
+                id,
+                'join' AS type,
+                family_id,
+                applicant_user_id,
+                applicant_name,
+                relation_desc,
+                NULL AS member_id,
+                NULL AS field_name,
+                NULL AS old_value,
+                NULL AS new_value,
+                status,
+                create_time
+            FROM join_request
+            WHERE family_id = #{familyId}
+            <if test="type == null or type == 'join'">
+                AND 1=1
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+
+            UNION ALL
+
+            SELECT
+                id,
+                'edit' AS type,
+                family_id,
+                applicant_user_id,
+                NULL AS applicant_name,
+                NULL AS relation_desc,
+                member_id,
+                field_name,
+                old_value,
+                new_value,
+                status,
+                create_time
+            FROM edit_request
+            WHERE family_id = #{familyId}
+            <if test="type == null or type == 'edit'">
+                AND 1=1
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        ) AS approvals
+        <where>
+            <if test="type != null and type != ''">
+                type = #{type}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="getAllApprovals" resultType="com.kin.family.dto.ApprovalResponse">
+        SELECT * FROM (
+            SELECT
+                id,
+                'join' AS type,
+                family_id,
+                applicant_user_id,
+                applicant_name,
+                relation_desc,
+                NULL AS member_id,
+                NULL AS field_name,
+                NULL AS old_value,
+                NULL AS new_value,
+                status,
+                create_time
+            FROM join_request
+            <where>
+                <if test="type == null or type == 'join'">
+                    AND 1=1
+                </if>
+                <if test="status != null and status != ''">
+                    AND status = #{status}
+                </if>
+            </where>
+
+            UNION ALL
+
+            SELECT
+                id,
+                'edit' AS type,
+                family_id,
+                applicant_user_id,
+                NULL AS applicant_name,
+                NULL AS relation_desc,
+                member_id,
+                field_name,
+                old_value,
+                new_value,
+                status,
+                create_time
+            FROM edit_request
+            <where>
+                <if test="type == null or type == 'edit'">
+                    AND 1=1
+                </if>
+                <if test="status != null and status != ''">
+                    AND status = #{status}
+                </if>
+            </where>
+        ) AS approvals
+        <where>
+            <if test="type != null and type != ''">
+                type = #{type}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+</mapper>

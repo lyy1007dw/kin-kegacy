@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>家谱 MVP 设计</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+        :root {
+            --primary: #8B4513; /* SaddleBrown */
+            --primary-light: #D2691E;
+            --bg-color: #F9FAFB;
+            --card-bg: #FFFFFF;
+            --text-main: #1F2937;
+            --text-sub: #6B7280;
+            --line-color: #E5E7EB;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #f3f4f6;
+            color: var(--text-main);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .font-serif {
+            font-family: 'Noto Serif SC', serif;
+        }
+
+        /* Mobile Container Simulation */
+        #app-container {
+            max-width: 430px;
+            margin: 0 auto;
+            background-color: var(--bg-color);
+            min-height: 100vh;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Tree Visualization CSS */
+        .tree ul {
+            padding-top: 20px; position: relative;
+            transition: all 0.5s;
+            display: flex;
+            justify-content: center;
+        }
+
+        .tree li {
+            float: left; text-align: center;
+            list-style-type: none;
+            position: relative;
+            padding: 20px 5px 0 5px;
+            transition: all 0.5s;
+        }
+
+        /* Connecting Lines */
+        .tree li::before, .tree li::after{
+            content: '';
+            position: absolute; top: 0; right: 50%;
+            border-top: 2px solid var(--line-color);
+            width: 50%; height: 20px;
+        }
+        .tree li::after{
+            right: auto; left: 50%;
+            border-left: 2px solid var(--line-color);
+        }
+        .tree li:only-child::after, .tree li:only-child::before {
+            display: none;
+        }
+        .tree li:only-child{ padding-top: 0;}
+        .tree li:first-child::before, .tree li:last-child::after{
+            border: 0 none;
+        }
+        .tree li:last-child::before{
+            border-right: 2px solid var(--line-color);
+            border-radius: 0 5px 0 0;
+        }
+        .tree li:first-child::after{
+            border-radius: 5px 0 0 0;
+        }
+        .tree ul ul::before{
+            content: '';
+            position: absolute; top: 0; left: 50%;
+            border-left: 2px solid var(--line-color);
+            width: 0; height: 20px;
+        }
+
+        /* Member Card Styling */
+        .member-card {
+            background: var(--card-bg);
+            border: 1px solid var(--line-color);
+            padding: 10px;
+            border-radius: 12px;
+            display: inline-block;
+            width: 100px;
+            transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            cursor: pointer;
+            position: relative;
+            z-index: 10;
+        }
+        .member-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(139, 69, 19, 0.2);
+            border-color: var(--primary-light);
+        }
+        .member-card.creator {
+            border: 2px solid var(--primary);
+            background-color: #FFFBF7;
+        }
+        .avatar-circle {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background-color: #eee;
+            margin: 0 auto 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #888;
+            overflow: hidden;
+        }
+        .avatar-circle img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Animations */
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+        /* Tab Bar */
+        .tab-bar {
+            background: white;
+            border-top: 1px solid #eee;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .tab-item.active { color: var(--primary); }
+        
+        /* Modal Overlay */
+        .modal-overlay {
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(2px);
+        }
+
+        /* Custom Scrollbar hide */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <!-- Header -->
+    <header class="bg-white px-4 py-3 flex justify-between items-center sticky top-0 z-20 shadow-sm">
+        <div class="flex items-center gap-2">
+            <img src="https://image.qwenlm.ai/public_source/c08144d5-35d9-4d58-9511-b201595589fd/1d7c5ef14-1022-415e-a0ec-5c07a6cb538b.png" class="w-8 h-8 rounded-full object-cover" alt="Logo">
+            <h1 class="font-serif font-bold text-lg text-gray-800" id="header-title">我的家谱</h1>
+        </div>
+        <button id="header-action-btn" class="text-gray-600 hover:text-gray-900 p-2">
+            <i class="ri-add-line text-xl"></i>
+        </button>
+    </header>
+
+    <!-- Main Content Area -->
+    <main id="main-content" class="flex-1 overflow-y-auto no-scrollbar relative pb-20">
+        <!-- Views will be injected here -->
+    </main>
+
+    <!-- Bottom Tab Bar -->
+    <nav class="tab-bar fixed bottom-0 w-full max-w-[430px] flex justify-around py-2 z-30">
+        <button onclick="router.navigate('home')" class="tab-item flex flex-col items-center gap-1 text-gray-400 w-16 active" id="tab-home">
+            <i class="ri-home-4-line text-2xl"></i>
+            <span class="text-xs">首页</span>
+        </button>
+        <button onclick="router.navigate('tree')" class="tab-item flex flex-col items-center gap-1 text-gray-400 w-16" id="tab-tree">
+            <i class="ri-tree-line text-2xl"></i>
+            <span class="text-xs">家谱树</span>
+        </button>
+        <button onclick="router.navigate('approval')" class="tab-item flex flex-col items-center gap-1 text-gray-400 w-16 relative" id="tab-approval">
+            <i class="ri-notification-3-line text-2xl"></i>
+            <span class="text-xs">审批</span>
+            <span id="approval-badge" class="hidden absolute top-0 right-4 w-2 h-2 bg-red-500 rounded-full"></span>
+        </button>
+        <button onclick="router.navigate('profile')" class="tab-item flex flex-col items-center gap-1 text-gray-400 w-16" id="tab-profile">
+            <i class="ri-user-smile-line text-2xl"></i>
+            <span class="text-xs">我的</span>
+        </button>
+    </nav>
+
+    <!-- Modals -->
+    <div id="modal-container" class="fixed inset-0 z-50 hidden pointer-events-none">
+        <!-- Modal content injected via JS -->
+    </div>
+</div>
+
+<script>
+    // --- Mock Data ---
+    const currentUser = {
+        id: 'u1',
+        name: '张三',
+        role: 'creator', // 'creator' or 'member'
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'
+    };
+
+    const familyData = {
+        id: 'f1',
+        name: '张氏家族',
+        code: '882910',
+        members: [
+            { id: 'm1', name: '张三', gender: 'male', parentId: null, isCreator: true, avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix' },
+            { id: 'm2', name: '张大', gender: 'male', parentId: 'm1', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka' },
+            { id: 'm3', name: '张二', gender: 'female', parentId: 'm1', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Zack' },
+            { id: 'm4', name: '张大一', gender: 'male', parentId: 'm2', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Bob' },
+            { id: 'm5', name: '张大二', gender: 'female', parentId: 'm2', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Coco' },
+        ]
+    };
+
+    const approvals = [
+        { id: 'a1', type: 'join', applicant: '李四', target: '张大', status: 'pending', time: '10 分钟前' },
+        { id: 'a2', type: 'modify', applicant: '张大', field: '简介', old: '无', new: '热爱运动', status: 'pending', time: '1 小时前' }
+    ];
+
+    // --- State Management ---
+    const state = {
+        currentView: 'home',
+        selectedMemberId: null
+    };
+
+    // --- Router & View Rendering ---
+    const router = {
+        navigate: (view) => {
+            state.currentView = view;
+            updateTabs(view);
+            renderView(view);
+        }
+    };
+
+    function updateTabs(view) {
+        document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active', 'text-[var(--primary)]'));
+        document.querySelectorAll('.tab-item').forEach(el => el.classList.add('text-gray-400'));
+        
+        const activeTab = document.getElementById(`tab-${view}`);
+        if(activeTab) {
+            activeTab.classList.remove('text-gray-400');
+            activeTab.classList.add('active');
+        }
+
+        // Header Logic
+        const headerTitle = document.getElementById('header-title');
+        const headerBtn = document.getElementById('header-action-btn');
+        
+        if (view === 'home') {
+            headerTitle.innerText = '我的家谱';
+            headerBtn.innerHTML = '<i class="ri-add-line text-xl"></i>';
+            headerBtn.onclick = () => showModal('createFamily');
+        } else if (view === 'tree') {
+            headerTitle.innerText = familyData.name;
+            headerBtn.innerHTML = '<i class="ri-qr-scan-2-line text-xl"></i>';
+            headerBtn.onclick = () => showModal('inviteCode');
+        } else if (view === 'approval') {
+            headerTitle.innerText = '审批中心';
+            headerBtn.innerHTML = '';
+            headerBtn.onclick = null;
+        } else if (view === 'profile') {
+            headerTitle.innerText = '个人中心';
+            headerBtn.innerHTML = '';
+            headerBtn.onclick = null;
+        }
+    }
+
+    function renderView(view) {
+        const container = document.getElementById('main-content');
+        container.innerHTML = '';
+        
+        if (view === 'home') renderHome(container);
+        else if (view === 'tree') renderTree(container);
+        else if (view === 'approval') renderApproval(container);
+        else if (view === 'profile') renderProfile(container);
+    }
+
+    // --- View Components ---
+
+    function renderHome(container) {
+        const html = `
+            <div class="p-4 fade-in space-y-6">
+                <!-- Created Section -->
+                <div>
+                    <h2 class="text-sm font-bold text-gray-500 mb-3 uppercase tracking-wider">我创建的</h2>
+                    <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center gap-4 active:scale-[0.98] transition-transform cursor-pointer" onclick="router.navigate('tree')">
+                        <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center text-orange-600 font-serif font-bold text-xl">
+                            张
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-bold text-gray-800">${familyData.name}</h3>
+                            <p class="text-xs text-gray-400 mt-1">创建者 · ${familyData.members.length} 位成员</p>
+                        </div>
+                        <i class="ri-arrow-right-s-line text-gray-300 text-xl"></i>
+                    </div>
+                </div>
+
+                <!-- Joined Section -->
+                <div>
+                    <h2 class="text-sm font-bold text-gray-500 mb-3 uppercase tracking-wider">我加入的</h2>
+                    <div class="bg-gray-50 rounded-xl p-6 text-center border border-dashed border-gray-300 text-gray-400 text-sm">
+                        暂无加入的家谱
+                    </div>
+                    <button onclick="showModal('joinFamily')" class="mt-4 w-full py-3 bg-white border border-gray-200 rounded-xl text-gray-600 font-medium text-sm active:bg-gray-50">
+                        + 输入家谱码加入
+                    </button>
+                </div>
+            </div>
+        `;
+        container.innerHTML = html;
+    }
+
+    function renderTree(container) {
+        // Build Tree HTML recursively
+        function buildTreeNodes(parentId) {
+            const children = familyData.members.filter(m => m.parentId === parentId);
+            if (children.length === 0) return '';
+
+            let html = '<ul>';
+            children.forEach(child => {
+                const isCreator = child.isCreator;
+                html += `
+                    <li>
+                        <div class="member-card ${isCreator ? 'creator' : ''}" onclick="showMemberDetail('${child.id}')">
+                            <div class="avatar-circle">
+                                <img src="${child.avatar}" alt="${child.name}">
+                            </div>
+                            <div class="font-bold text-sm text-gray-800">${child.name}</div>
+                            <div class="text-[10px] text-gray-400 mt-1">${isCreator ? '创建者' : (child.gender === 'male' ? '男' : '女')}</div>
+                        </div>
+                        ${buildTreeNodes(child.id)}
+                    </li>
+                `;
+            });
+            html += '</ul>';
+            return html;
+        }
+
+        const rootMembers = familyData.members.filter(m => m.parentId === null);
+        let treeHtml = '<div class="tree w-full overflow-x-auto pb-10 pt-10 px-4 min-w-max flex justify-center">';
+        
+        rootMembers.forEach(root => {
+             treeHtml += `
+                <ul>
+                    <li>
+                        <div class="member-card ${root.isCreator ? 'creator' : ''}" onclick="showMemberDetail('${root.id}')">
+                            <div class="avatar-circle">
+                                <img src="${root.avatar}" alt="${root.name}">
+                            </div>
+                            <div class="font-bold text-sm text-gray-800">${root.name}</div>
+                            <div class="text-[10px] text-gray-400 mt-1">${root.isCreator ? '创建者' : (root.gender === 'male' ? '男' : '女')}</div>
+                        </div>
+                        ${buildTreeNodes(root.id)}
+                    </li>
+                </ul>
+             `;
+        });
+        treeHtml += '</div>';
+
+        const html = `
+            <div class="fade-in h-full flex flex-col">
+                <div class="bg-white px-4 py-2 border-b border-gray-100 text-xs text-gray-500 flex justify-between">
+                    <span>共 ${familyData.members.length} 人</span>
+                    <span>点击成员查看详情</span>
+                </div>
+                ${treeHtml}
+            </div>
+        `;
+        container.innerHTML = html;
+    }
+
+    function renderApproval(container) {
+        const pendingCount = approvals.filter(a => a.status === 'pending').length;
+        document.getElementById('approval-badge').classList.toggle('hidden', pendingCount === 0);
+
+        if (pendingCount === 0) {
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-[60vh] text-gray-400 fade-in">
+                    <i class="ri-checkbox-circle-line text-6xl mb-4 text-gray-200"></i>
+                    <p>暂无待审批事项</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '<div class="p-4 space-y-4 fade-in">';
+        approvals.filter(a => a.status === 'pending').forEach(approval => {
+            const isJoin = approval.type === 'join';
+            html += `
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                    <div class="flex justify-between items-start mb-3">
+                        <span class="px-2 py-1 bg-blue-50 text-blue-600 text-xs rounded font-medium">${isJoin ? '加入申请' : '修改申请'}</span>
+                        <span class="text-xs text-gray-400">${approval.time}</span>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <p><span class="text-gray-500">申请人：</span> <span class="font-medium text-gray-800">${approval.applicant}</span></p>
+                        ${isJoin 
+                            ? `<p><span class="text-gray-500">申请加入：</span> <span class="font-medium text-gray-800">${approval.target} 名下</span></p>`
+                            : `<div class="bg-gray-50 p-2 rounded text-xs flex justify-between"><span>${approval.field}: ${approval.old}</span> <i class="ri-arrow-right-line text-gray-400"></i> <span class="font-bold text-gray-800">${approval.new}</span></div>`
+                        }
+                    </div>
+                    <div class="flex gap-3 mt-4 pt-3 border-t border-gray-50">
+                        <button onclick="handleApproval('${approval.id}', 'reject')" class="flex-1 py-2 border border-gray-200 text-gray-600 rounded-lg text-sm font-medium active:bg-gray-50">拒绝</button>
+                        <button onclick="handleApproval('${approval.id}', 'approve')" class="flex-1 py-2 bg-[var(--primary)] text-white rounded-lg text-sm font-medium active:opacity-90">同意</button>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    function renderProfile(container) {
+        const html = `
+            <div class="p-4 fade-in space-y-6">
+                <div class="flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm">
+                    <img src="${currentUser.avatar}" class="w-16 h-16 rounded-full bg-gray-100">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800">${currentUser.name}</h2>
+                        <p class="text-sm text-gray-500 mt-1">ID: 882910</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl overflow-hidden shadow-sm">
+                    <div class="p-4 border-b border-gray-50 flex justify-between items-center active:bg-gray-50 cursor-pointer">
+                        <span class="text-gray-700">账号设置</span>
+                        <i class="ri-arrow-right-s-line text-gray-300"></i>
+                    </div>
+                    <div class="p-4 border-b border-gray-50 flex justify-between items-center active:bg-gray-50 cursor-pointer">
+                        <span class="text-gray-700">关于我们</span>
+                        <i class="ri-arrow-right-s-line text-gray-300"></i>
+                    </div>
+                    <div class="p-4 flex justify-between items-center active:bg-gray-50 cursor-pointer text-red-500">
+                        <span>退出登录</span>
+                    </div>
+                </div>
+                
+                <div class="text-center text-xs text-gray-300 mt-10">
+                    Family Tree MVP v1.0.0
+                </div>
+            </div>
+        `;
+        container.innerHTML = html;
+    }
+
+    // --- Modal Logic ---
+    function showModal(type) {
+        const modalContainer = document.getElementById('modal-container');
+        modalContainer.classList.remove('hidden');
+        modalContainer.classList.add('pointer-events-auto');
+        
+        let content = '';
+        
+        if (type === 'createFamily') {
+            content = `
+                <div class="absolute bottom-0 w-full bg-white rounded-t-2xl p-6 slide-up shadow-2xl">
+                    <div class="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-6"></div>
+                    <h3 class="text-lg font-bold text-center mb-6">创建新家谱</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-500 mb-1">家谱名称</label>
+                            <input type="text" placeholder="例如：李氏家族" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-800 focus:outline-none focus:border-[var(--primary)]">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-500 mb-1">简介 (可选)</label>
+                            <textarea placeholder="一句话介绍这个家族..." class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-800 focus:outline-none focus:border-[var(--primary)] h-24"></textarea>
+                        </div>
+                        <button onclick="closeModal(); showToast('家谱创建成功')" class="w-full bg-[var(--primary)] text-white font-bold py-3.5 rounded-xl mt-4 shadow-lg shadow-orange-200 active:scale-[0.98] transition-transform">立即创建</button>
+                        <button onclick="closeModal()" class="w-full text-gray-500 font-medium py-3">取消</button>
+                    </div>
+                </div>
+            `;
+        } else if (type === 'inviteCode') {
+            content = `
+                <div class="absolute inset-0 flex items-center justify-center p-4">
+                    <div class="bg-white w-full max-w-sm rounded-2xl p-6 slide-up shadow-2xl text-center relative">
+                        <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400"><i class="ri-close-line text-2xl"></i></button>
+                        <h3 class="text-lg font-bold text-gray-800 mb-2">邀请家人加入</h3>
+                        <p class="text-sm text-gray-500 mb-6">分享家谱码或二维码给家人</p>
+                        
+                        <div class="bg-gray-50 p-4 rounded-xl mb-6 inline-block">
+                            <!-- Mock QR Code -->
+                            <div class="w-48 h-48 bg-white border-4 border-white shadow-sm mx-auto flex items-center justify-center relative overflow-hidden">
+                                <div class="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgMWgydjJIMUMxeiIgZmlsbD0iIzAwMCIvPjwvc3ZnPg==')]"></div>
+                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=FamilyCode882910" class="w-40 h-40 mix-blend-multiply">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-center gap-2 bg-gray-100 rounded-lg p-3 mb-6">
+                            <span class="text-gray-500 text-sm">家谱码：</span>
+                            <span class="text-2xl font-mono font-bold text-[var(--primary)] tracking-widest">${familyData.code}</span>
+                            <button class="text-gray-400 hover:text-gray-600 ml-2"><i class="ri-file-copy-line"></i></button>
+                        </div>
+
+                        <button onclick="closeModal(); showToast('已复制邀请链接')" class="w-full bg-[var(--primary)] text-white font-bold py-3 rounded-xl shadow-md">分享邀请</button>
+                    </div>
+                </div>
+            `;
+        } else if (type === 'memberDetail') {
+            const member = familyData.members.find(m => m.id === state.selectedMemberId);
+            const isSelf = member.id === 'm1'; // Mock logic for current user
+            const isCreator = currentUser.role === 'creator';
+            
+            content = `
+                <div class="absolute bottom-0 w-full bg-white rounded-t-2xl p-6 slide-up shadow-2xl max-h-[85vh] overflow-y-auto">
+                    <div class="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-6"></div>
+                    
+                    <div class="flex flex-col items-center mb-6">
+                        <img src="${member.avatar}" class="w-24 h-24 rounded-full bg-gray-100 mb-3 border-4 border-white shadow-md">
+                        <h2 class="text-2xl font-bold text-gray-800">${member.name}</h2>
+                        <span class="px-3 py-1 bg-gray-100 text-gray-500 text-xs rounded-full mt-2">${member.gender === 'male' ? '男' : '女'} · ${member.isCreator ? '创建者' : '成员'}</span>
+                    </div>
+
+                    <div class="space-y-4 mb-8">
+                        <div class="flex justify-between border-b border-gray-50 pb-2">
+                            <span class="text-gray-400 text-sm">出生日期</span>
+                            <span class="text-gray-800 text-sm font-medium">1990-01-01</span>
+                        </div>
+                        <div class="flex justify-between border-b border-gray-50 pb-2">
+                            <span class="text-gray-400 text-sm">简介</span>
+                            <span class="text-gray-800 text-sm font-medium text-right max-w-[60%]">热爱生活，喜欢爬山和摄影。</span>
+                        </div>
+                        <div class="flex justify-between border-b border-gray-50 pb-2">
+                            <span class="text-gray-400 text-sm">关系</span>
+                            <span class="text-gray-800 text-sm font-medium">父子</span>
+                        </div>
+                    </div>
+
+                    ${!isSelf ? `
+                    <button onclick="showModal('editRequest')" class="w-full border border-[var(--primary)] text-[var(--primary)] font-bold py-3.5 rounded-xl mb-3 active:bg-orange-50">申请修改信息</button>
+                    ` : ''}
+                    
+                    <button onclick="closeModal()" class="w-full bg-gray-100 text-gray-600 font-bold py-3.5 rounded-xl active:bg-gray-200">关闭</button>
+                </div>
+            `;
+        } else if (type === 'editRequest') {
+             content = `
+                <div class="absolute bottom-0 w-full bg-white rounded-t-2xl p-6 slide-up shadow-2xl">
+                    <h3 class="text-lg font-bold text-center mb-2">申请修改信息</h3>
+                    <p class="text-xs text-center text-gray-400 mb-6">修改提交后需由创建者审批</p>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-500 mb-1">修改字段</label>
+                            <select class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-800 focus:outline-none">
+                                <option>简介</option>
+                                <option>出生日期</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-500 mb-1">新内容</label>
+                            <input type="text" placeholder="输入新的内容" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-800 focus:outline-none focus:border-[var(--primary)]">
+                        </div>
+                        <button onclick="closeModal(); showToast('申请已提交，等待审批')" class="w-full bg-[var(--primary)] text-white font-bold py-3.5 rounded-xl mt-4 shadow-lg shadow-orange-200 active:scale-[0.98] transition-transform">提交申请</button>
+                        <button onclick="closeModal()" class="w-full text-gray-500 font-medium py-3">取消</button>
+                    </div>
+                </div>
+            `;
+        } else if (type === 'joinFamily') {
+            content = `
+                <div class="absolute bottom-0 w-full bg-white rounded-t-2xl p-6 slide-up shadow-2xl">
+                    <h3 class="text-lg font-bold text-center mb-6">加入家谱</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-500 mb-1">6 位家谱码</label>
+                            <input type="text" placeholder="请输入 6 位数字" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-800 text-center tracking-widest text-lg font-mono focus:outline-none focus:border-[var(--primary)]">
+                        </div>
+                         <div>
+                            <label class="block text-sm text-gray-500 mb-1">您的姓名</label>
+                            <input type="text" placeholder="真实姓名" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-800 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-500 mb-1">与谁的关系</label>
+                            <input type="text" placeholder="例如：张三的儿子" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-800 focus:outline-none">
+                        </div>
+                        <button onclick="closeModal(); showToast('申请已提交')" class="w-full bg-[var(--primary)] text-white font-bold py-3.5 rounded-xl mt-4 shadow-lg shadow-orange-200 active:scale-[0.98] transition-transform">提交申请</button>
+                        <button onclick="closeModal()" class="w-full text-gray-500 font-medium py-3">取消</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        modalContainer.innerHTML = `<div class="modal-overlay absolute inset-0" onclick="closeModal()"></div>${content}`;
+    }
+
+    function showMemberDetail(id) {
+        state.selectedMemberId = id;
+        showModal('memberDetail');
+    }
+
+    function closeModal() {
+        const modalContainer = document.getElementById('modal-container');
+        modalContainer.classList.add('pointer-events-none');
+        modalContainer.classList.add('hidden');
+        setTimeout(() => {
+            if(!modalContainer.classList.contains('hidden')) modalContainer.innerHTML = '';
+        }, 300);
+    }
+
+    function handleApproval(id, action) {
+        // Visual feedback
+        const btn = event.target;
+        const parent = btn.parentElement;
+        const card = parent.parentElement;
+        
+        if (action === 'approve') {
+            card.style.opacity = '0';
+            card.style.transform = 'translateX(-20px)';
+            setTimeout(() => {
+                // Remove from mock data
+                const index = approvals.findIndex(a => a.id === id);
+                if(index > -1) approvals.splice(index, 1);
+                renderView('approval');
+                showToast('已同意');
+            }, 300);
+        } else {
+             card.style.opacity = '0';
+             setTimeout(() => {
+                const index = approvals.findIndex(a => a.id === id);
+                if(index > -1) approvals.splice(index, 1);
+                renderView('approval');
+                showToast('已拒绝');
+            }, 300);
+        }
+    }
+
+    function showToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-800 text-white px-6 py-3 rounded-lg text-sm font-medium shadow-lg z-[60] fade-in pointer-events-none';
+        toast.innerText = message;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        }, 2000);
+    }
+
+    // --- Init ---
+    window.addEventListener('DOMContentLoaded', () => {
+        router.navigate('home');
+    });
+
+</script>
+</body>
+</html>
+
