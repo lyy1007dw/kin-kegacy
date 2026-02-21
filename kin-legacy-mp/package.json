@@ -1,7 +1,7 @@
 {
-  "name": "kin-legacy-mp",
+  "name": "shenzhongzhuiyuan-mp",
   "version": "1.0.0",
-  "description": "家族谱系管理小程序",
+  "description": "慎重追远 - 家族谱系管理小程序",
   "main": "main.js",
   "scripts": {
     "dev:mp-weixin": "uni -p mp-weixin",

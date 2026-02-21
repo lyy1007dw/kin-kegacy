@@ -1,8 +1,9 @@
 {
-  "name": "kin-legacy-admin",
+  "name": "shenzhongzhuiyuan-admin",
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "description": "慎重追远 - 家谱管理后台",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc && vite build",

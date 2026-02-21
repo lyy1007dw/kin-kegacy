@@ -9,8 +9,8 @@
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
-    <name>family-tree</name>
-    <description>家谱管理系统</description>
+    <name>慎重追远</name>
+    <description>慎重追远 - 现代化家谱管理系统</description>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
