@@ -8,5 +8,5 @@ export interface Statistics {
 }
 
 export const getStatistics = () => {
-  return request.get<Statistics>('/statistics')
+  return request.get<Statistics>('/admin/statistics')
 }

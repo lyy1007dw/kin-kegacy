@@ -18,11 +18,11 @@ export interface PageResult<T> {
 }
 
 export const getUserList = (page = 1, size = 10) => {
-  return request.get<PageResult<User>>('/user/list/paged', { params: { page, size } })
+  return request.get<PageResult<User>>('/admin/user/list/paged', { params: { page, size } })
 }
 
 export const getNonAdminUsers = () => {
-  return request.get<User[]>('/user/list/non-admin')
+  return request.get<User[]>('/admin/user/list/non-admin')
 }
 
 export const getFamilyList = (page = 1, size = 10) => {
