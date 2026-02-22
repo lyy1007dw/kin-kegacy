@@ -29,9 +29,9 @@ export default {
   },
 
   approval: {
-    getList: (familyId, params) => get(`/family/${familyId}/approvals`, params),
-    getAll: (params) => get('/approvals/all', params),
-    handle: (familyId, requestId, data) => post(`/family/${familyId}/approval/${requestId}/handle`, data)
+    getList: (familyId, params) => get('/approvals', { familyId, ...params }),
+    getAll: (params) => get('/approvals', params),
+    handle: (familyId, requestId, data) => post(`/approvals/${requestId}/handle?familyId=${familyId}`, data)
   },
 
   user: {

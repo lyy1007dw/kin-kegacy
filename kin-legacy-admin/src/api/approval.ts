@@ -16,8 +16,8 @@ export interface Approval {
 }
 
 export const getApprovalList = (familyId: number, type?: string, status?: string, page = 1, size = 10) => {
-  return request.get<Approval[]>(`/family/${familyId}/approvals`, {
-    params: { type, status, page, size }
+  return request.get<Approval[]>('/approvals', {
+    params: { familyId, type, status, page, size }
   })
 }
 

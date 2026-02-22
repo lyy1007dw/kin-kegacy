@@ -24,7 +24,7 @@ import com.kin.family.mapper.FamilyMemberMapper;
 import com.kin.family.mapper.MemberRelationMapper;
 import com.kin.family.mapper.UserMapper;
 import com.kin.family.service.MemberService;
-import com.kin.family.util.UserContext;
+import com.kin.family.util.context.UserContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

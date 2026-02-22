@@ -1,5 +1,6 @@
 package com.kin.family.config;
 
+import com.kin.family.config.jwt.JwtAuthenticationInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
