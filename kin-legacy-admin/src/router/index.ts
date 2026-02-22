@@ -74,6 +74,17 @@ router.beforeEach((to, from, next) => {
     return
   }
 
+  if (userStore.token && to.path === '/login') {
+    next('/')
+    return
+  }
+
+  if (userStore.userInfo?.role !== 'admin' && to.path !== '/login') {
+    next('/login')
+    userStore.logout()
+    return
+  }
+
   next()
 })
 

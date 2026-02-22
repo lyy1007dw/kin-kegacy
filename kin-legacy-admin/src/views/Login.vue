@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { NCard, NForm, NFormItem, NInput, NButton, NSpace } from 'naive-ui'
+import { NCard, NForm, NFormItem, NInput, NButton, NSpace, createDiscreteApi } from 'naive-ui'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
 const userStore = useUserStore()
+const { message } = createDiscreteApi(['message'])
 
 const formRef = ref()
 const loading = ref(false)
@@ -25,6 +26,13 @@ const handleLogin = async () => {
     loading.value = true
     await formRef.value?.validate()
     await userStore.login(formValue.value.username, formValue.value.password)
+    
+    if (userStore.userInfo?.role !== 'admin') {
+      message.error('您没有权限访问管理系统')
+      await userStore.logout()
+      return
+    }
+    
     router.push('/')
   } catch (error: any) {
     console.error(error)

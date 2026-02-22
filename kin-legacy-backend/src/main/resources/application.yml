@@ -17,6 +17,13 @@ wechat:
     appid: ${wechat.miniapp.appid}
     secret: ${wechat.miniapp.secret}
 
+jwt:
+  secret: ${jwt.secret}
+  expiration: 86400000
+  refresh-expiration: 604800000
+  header: Authorization
+  prefix: "Bearer "
+
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package: com.kin.family.entity

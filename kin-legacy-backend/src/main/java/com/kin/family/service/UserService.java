@@ -12,6 +12,7 @@ import java.util.Map;
 public interface UserService {
     LoginResponse wxLogin(WxLoginRequest request);
     LoginResponse login(String username, String password);
+    LoginResponse refreshToken(String refreshToken);
     UserInfoResponse getCurrentUser();
     UserInfoResponse getUserById(Long userId);
     List<UserInfoResponse> getAllUsers();

@@ -1,9 +1,12 @@
 const BASE_URL = 'http://localhost:8080/api'
 
+let isRefreshing = false
+let requests: Array<() => void> = []
+
 const request = (options) => {
   return new Promise((resolve, reject) => {
-    const userId = uni.getStorageSync('userId')
-    const token = uni.getStorageSync('token')
+    const accessToken = uni.getStorageSync('accessToken')
+    const refreshToken = uni.getStorageSync('refreshToken')
     
     uni.request({
       url: BASE_URL + options.url,
@@ -11,31 +14,74 @@ const request = (options) => {
       data: options.data,
       header: {
         'Content-Type': 'application/json',
-        'X-User-Id': userId || '',
-        'Authorization': token ? `Bearer ${token}` : '',
+        'Authorization': accessToken ? `Bearer ${accessToken}` : '',
         ...options.header
       },
-      success: (res) => {
+      success: async (res) => {
         if (res.statusCode === 200) {
           if (res.data.code === 200) {
             resolve(res.data.data)
           } else if (res.data.code === 401) {
+            if (!isRefreshing && refreshToken) {
+              isRefreshing = true
+              try {
+                const refreshRes = await refreshTokenApi(refreshToken)
+                if (refreshRes) {
+                  requests.forEach(callback => callback())
+                  requests = []
+                  const newToken = uni.getStorageSync('accessToken')
+                  options.header['Authorization'] = `Bearer ${newToken}`
+                  uni.request({
+                    ...options,
+                    header: options.header,
+                    success: (res) => resolve(res.data.data),
+                    fail: reject
+                  })
+                  isRefreshing = false
+                  return
+                }
+              } catch (e) {
+                isRefreshing = false
+              }
+            }
             clearAuth()
             reject(new Error('未授权，请重新登录'))
           } else {
             const errorMsg = res.data.message || '系统繁忙，请稍后重试'
             uni.showToast({
-              title: `业务异常: ${errorMsg}`,
+              title: errorMsg,
               icon: 'none'
             })
             reject(new Error(errorMsg))
           }
         } else if (res.statusCode === 401) {
+          if (!isRefreshing && refreshToken) {
+            isRefreshing = true
+            try {
+              const refreshRes = await refreshTokenApi(refreshToken)
+              if (refreshRes) {
+                requests.forEach(callback => callback())
+                requests = []
+                const newToken = uni.getStorageSync('accessToken')
+                options.header['Authorization'] = `Bearer ${newToken}`
+                uni.request({
+                  ...options,
+                  header: options.header,
+                  success: (res) => resolve(res.data.data),
+                  fail: reject
+                })
+                isRefreshing = false
+                return
+              }
+            } catch (e) {
+              isRefreshing = false
+            }
+          }
           clearAuth()
           reject(new Error('未授权，请重新登录'))
         } else if (res.data && res.data.message) {
           uni.showToast({
-            title: `业务异常: ${res.data.message}`,
+            title: res.data.message,
             icon: 'none'
           })
           reject(new Error(res.data.message))
@@ -58,8 +104,34 @@ const request = (options) => {
   })
 }
 
+const refreshTokenApi = (refreshToken) => {
+  return new Promise((resolve) => {
+    uni.request({
+      url: BASE_URL + '/auth/refresh',
+      method: 'POST',
+      header: {
+        'Content-Type': 'application/json'
+      },
+      data: { refreshToken },
+      success: (res) => {
+        if (res.data.code === 200) {
+          uni.setStorageSync('accessToken', res.data.data.accessToken)
+          uni.setStorageSync('refreshToken', res.data.data.refreshToken)
+          resolve(true)
+        } else {
+          resolve(false)
+        }
+      },
+      fail: () => {
+        resolve(false)
+      }
+    })
+  })
+}
+
 function clearAuth() {
-  uni.removeStorageSync('token')
+  uni.removeStorageSync('accessToken')
+  uni.removeStorageSync('refreshToken')
   uni.removeStorageSync('userId')
   uni.removeStorageSync('userInfo')
   uni.reLaunch({

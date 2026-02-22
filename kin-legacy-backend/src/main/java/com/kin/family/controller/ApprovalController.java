@@ -1,5 +1,6 @@
 package com.kin.family.controller;
 
+import com.kin.family.annotation.RequireLogin;
 import com.kin.family.dto.*;
 import com.kin.family.service.ApprovalService;
 import com.kin.family.util.UserContext;
@@ -14,6 +15,7 @@ public class ApprovalController {
     private final ApprovalService approvalService;
 
     @GetMapping("/approvals")
+    @RequireLogin
     public Result<PageResult<ApprovalResponse>> getApprovals(
             @PathVariable Long familyId,
             @RequestParam(required = false) String type,
@@ -24,6 +26,7 @@ public class ApprovalController {
     }
 
     @PostMapping("/approval/{requestId}/handle")
+    @RequireLogin
     public Result<Void> handleApproval(
             @PathVariable Long familyId,
             @PathVariable Long requestId,

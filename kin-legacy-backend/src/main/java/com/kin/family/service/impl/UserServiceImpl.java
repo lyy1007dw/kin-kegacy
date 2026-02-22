@@ -3,6 +3,7 @@ package com.kin.family.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.kin.family.config.JwtProperties;
 import com.kin.family.config.WeChatConfig;
 import com.kin.family.dto.LoginResponse;
 import com.kin.family.dto.PageResult;
@@ -14,6 +15,7 @@ import com.kin.family.enums.UserStatus;
 import com.kin.family.exception.BusinessException;
 import com.kin.family.mapper.UserMapper;
 import com.kin.family.service.UserService;
+import com.kin.family.util.JwtUtil;
 import com.kin.family.util.UserContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +26,6 @@ import org.springframework.web.client.RestTemplate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -36,6 +37,8 @@ public class UserServiceImpl implements UserService {
     private final com.kin.family.mapper.FamilyMemberMapper memberMapper;
     private final com.kin.family.mapper.JoinRequestMapper joinRequestMapper;
     private final WeChatConfig weChatConfig;
+    private final JwtUtil jwtUtil;
+    private final JwtProperties jwtProperties;
 
     @Override
     public LoginResponse wxLogin(WxLoginRequest request) {
@@ -66,15 +69,7 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException("该账号已被禁用，请联系管理员");
         }
 
-        String token = UUID.randomUUID().toString().replace("-", "");
-        
-        LoginResponse response = new LoginResponse();
-        response.setToken(token);
-        response.setUser(convertToUserInfo(user));
-        
-        UserContext.setUserId(user.getId());
-        
-        return response;
+        return buildLoginResponse(user);
     }
 
     private String getOpenidFromWechat(String code) {
@@ -126,28 +121,15 @@ public class UserServiceImpl implements UserService {
         wrapper.eq(User::getUsername, username);
         User user = userMapper.selectOne(wrapper);
 
-        if (user == null) {
-            throw new BusinessException("用户不存在");
-        }
-
-        // 简单密码验证（生产环境应加密存储和验证）
-        if (!password.equals(user.getPassword())) {
-            throw new BusinessException("密码错误");
+        if (user == null || !password.equals(user.getPassword())) {
+            throw new BusinessException("用户名或密码错误");
         }
 
         if (user.getStatus() == UserStatus.disabled) {
             throw new BusinessException("该账号已被禁用，请联系管理员");
         }
 
-        String token = UUID.randomUUID().toString().replace("-", "");
-        
-        LoginResponse response = new LoginResponse();
-        response.setToken(token);
-        response.setUser(convertToUserInfo(user));
-        
-        UserContext.setUserId(user.getId());
-        
-        return response;
+        return buildLoginResponse(user);
     }
 
     @Override
@@ -282,5 +264,39 @@ public class UserServiceImpl implements UserService {
         response.setStatus(user.getStatus());
         response.setCreateTime(user.getCreateTime());
         return response;
+    }
+
+    private LoginResponse buildLoginResponse(User user) {
+        String accessToken = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole().name());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getId());
+
+        LoginResponse response = new LoginResponse();
+        response.setAccessToken(accessToken);
+        response.setRefreshToken(refreshToken);
+        response.setTokenType("Bearer");
+        response.setExpiresIn(jwtProperties.getExpiration() / 1000);
+        response.setUserInfo(convertToUserInfo(user));
+
+        UserContext.setUserId(user.getId());
+        return response;
+    }
+
+    public LoginResponse refreshToken(String refreshToken) {
+        if (!jwtUtil.validateToken(refreshToken)) {
+            throw new BusinessException(401, "Refresh token无效或已过期");
+        }
+
+        Long userId = jwtUtil.getUserIdFromToken(refreshToken);
+        User user = userMapper.selectById(userId);
+
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+
+        if (user.getStatus() == UserStatus.disabled) {
+            throw new BusinessException("该账号已被禁用");
+        }
+
+        return buildLoginResponse(user);
     }
 }

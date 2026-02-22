@@ -1,5 +1,6 @@
 package com.kin.family.controller;
 
+import com.kin.family.annotation.RequireLogin;
 import com.kin.family.dto.*;
 import com.kin.family.service.ApprovalService;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,7 @@ public class ApprovalListController {
     private final ApprovalService approvalService;
 
     @GetMapping("/all")
+    @RequireLogin
     public Result<PageResult<ApprovalResponse>> getAllApprovals(
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String status,

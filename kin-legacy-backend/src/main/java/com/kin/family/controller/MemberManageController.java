@@ -1,5 +1,7 @@
 package com.kin.family.controller;
 
+import com.kin.family.annotation.RequireLogin;
+import com.kin.family.annotation.RequireRole;
 import com.kin.family.dto.*;
 import com.kin.family.service.MemberService;
 import lombok.RequiredArgsConstructor;
@@ -15,11 +17,15 @@ public class MemberManageController {
     private final MemberService memberService;
 
     @GetMapping("/member/list")
+    @RequireLogin
+    @RequireRole("admin")
     public Result<List<MemberResponse>> getAllMembers() {
         return Result.success(memberService.getAllMembers());
     }
 
     @GetMapping("/member/list/paged")
+    @RequireLogin
+    @RequireRole("admin")
     public Result<PageResult<MemberResponse>> getMembersPaged(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
@@ -27,6 +33,8 @@ public class MemberManageController {
     }
 
     @PostMapping("/member")
+    @RequireLogin
+    @RequireRole("admin")
     public Result<MemberResponse> addMember(@RequestBody AddMemberByUserRequest request) {
         return Result.success(memberService.addMemberByUser(
                 request.getFamilyId(), 

@@ -1,5 +1,6 @@
 package com.kin.family.controller;
 
+import com.kin.family.annotation.RequireLogin;
 import com.kin.family.dto.*;
 import com.kin.family.service.FamilyService;
 import com.kin.family.util.UserContext;
@@ -16,12 +17,14 @@ public class FamilyController {
     private final FamilyService familyService;
 
     @PostMapping("/create")
+    @RequireLogin
     public Result<FamilyDetailResponse> createFamily(@RequestBody CreateFamilyRequest request) {
         Long userId = UserContext.getUserId();
         return Result.success(familyService.createFamily(request, userId));
     }
 
     @PostMapping("/join")
+    @RequireLogin
     public Result<Void> joinFamily(@RequestBody JoinFamilyRequest request) {
         Long userId = UserContext.getUserId();
         familyService.joinFamily(request, userId);
@@ -34,6 +37,7 @@ public class FamilyController {
     }
 
     @GetMapping("/mine")
+    @RequireLogin
     public Result<List<FamilyDetailResponse>> getMyFamilies() {
         Long userId = UserContext.getUserId();
         return Result.success(familyService.getMyFamilies(userId));
@@ -57,12 +61,14 @@ public class FamilyController {
     }
 
     @PutMapping("/{id}")
+    @RequireLogin
     public Result<FamilyDetailResponse> updateFamily(@PathVariable Long id, @RequestBody CreateFamilyRequest request) {
         Long userId = UserContext.getUserId();
         return Result.success(familyService.updateFamily(id, request, userId));
     }
 
     @DeleteMapping("/{id}")
+    @RequireLogin
     public Result<Void> deleteFamily(@PathVariable Long id) {
         Long userId = UserContext.getUserId();
         familyService.deleteFamily(id, userId);

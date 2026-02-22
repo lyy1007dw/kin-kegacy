@@ -1,5 +1,7 @@
 package com.kin.family.controller;
 
+import com.kin.family.annotation.RequireLogin;
+import com.kin.family.annotation.RequireRole;
 import com.kin.family.dto.*;
 import com.kin.family.service.ApprovalService;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +17,8 @@ public class AdminApprovalController {
     private final ApprovalService approvalService;
 
     @GetMapping("/approvals")
+    @RequireLogin
+    @RequireRole("admin")
     public Result<PageResult<ApprovalResponse>> getAllApprovals(
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String status,
@@ -24,6 +28,8 @@ public class AdminApprovalController {
     }
 
     @PostMapping("/approval/{familyId}/{requestId}/handle")
+    @RequireLogin
+    @RequireRole("admin")
     public Result<Void> handleApproval(
             @PathVariable Long familyId,
             @PathVariable Long requestId,

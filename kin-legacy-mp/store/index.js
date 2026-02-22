@@ -3,7 +3,8 @@ import api from '../utils/api'
 
 const store = createStore({
   state: {
-    token: uni.getStorageSync('token') || '',
+    accessToken: uni.getStorageSync('accessToken') || '',
+    refreshToken: uni.getStorageSync('refreshToken') || '',
     userId: uni.getStorageSync('userId') || null,
     userInfo: uni.getStorageSync('userInfo') || null,
     currentFamily: null,
@@ -12,14 +13,16 @@ const store = createStore({
   },
 
   getters: {
-    isLoggedIn: (state) => !!state.token && !!state.userId,
+    isLoggedIn: (state) => !!state.accessToken && !!state.userId,
     isCreator: (state) => state.currentFamily && state.userInfo && state.currentFamily.creatorId === state.userInfo.id
   },
 
   mutations: {
-    SET_TOKEN(state, token) {
-      state.token = token
-      uni.setStorageSync('token', token)
+    SET_TOKEN(state, { accessToken, refreshToken }) {
+      state.accessToken = accessToken
+      state.refreshToken = refreshToken
+      uni.setStorageSync('accessToken', accessToken)
+      uni.setStorageSync('refreshToken', refreshToken)
     },
     
     SET_USER_ID(state, userId) {
@@ -37,10 +40,12 @@ const store = createStore({
     },
     
     CLEAR_AUTH(state) {
-      state.token = ''
+      state.accessToken = ''
+      state.refreshToken = ''
       state.userId = null
       state.userInfo = null
-      uni.removeStorageSync('token')
+      uni.removeStorageSync('accessToken')
+      uni.removeStorageSync('refreshToken')
       uni.removeStorageSync('userId')
       uni.removeStorageSync('userInfo')
     },
@@ -62,8 +67,8 @@ const store = createStore({
     async wxLogin({ commit }, code) {
       try {
         const res = await api.auth.wxLogin(code)
-        commit('SET_TOKEN', res.token)
-        commit('SET_USER_INFO', res.user)
+        commit('SET_TOKEN', { accessToken: res.accessToken, refreshToken: res.refreshToken })
+        commit('SET_USER_INFO', res.userInfo)
         return res
       } catch (error) {
         throw error
