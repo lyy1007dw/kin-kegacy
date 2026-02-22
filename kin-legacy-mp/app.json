@@ -1,0 +1,28 @@
+{
+  "name": "慎重追远",
+  "appid": "__UNI__",
+  "description": "慎终追远，民德归厚",
+  "versionName": "1.0.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "app-plus": {
+    "compatible": {
+      "ignoreVersion": true
+    }
+  },
+  "h5": {
+    "router": {
+      "mode": "hash"
+    }
+  },
+  "mp-weixin": {
+    "appid": "",
+    "setting": {
+      "urlCheck": false,
+      "es6": true,
+      "postcss": true,
+      "minified": true
+    },
+    "usingComponents": true
+  }
+}

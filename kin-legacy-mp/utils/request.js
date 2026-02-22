@@ -1,7 +1,7 @@
 const BASE_URL = 'http://localhost:8080/api'
 
 let isRefreshing = false
-let requests: Array<() => void> = []
+let requests = []
 
 const request = (options) => {
   return new Promise((resolve, reject) => {
