@@ -15,6 +15,7 @@ CREATE TABLE `user` (
     `avatar` VARCHAR(512) NULL COMMENT '头像URL',
     `phone` VARCHAR(20) NULL COMMENT '手机号',
     `role` VARCHAR(20) NOT NULL DEFAULT 'user' COMMENT '角色: admin-管理员 user-普通用户',
+    `status` VARCHAR(20) NOT NULL DEFAULT 'normal' COMMENT '状态: normal-正常 disabled-已禁用',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
@@ -24,8 +25,8 @@ CREATE TABLE `user` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 
 -- 插入默认管理员用户 (密码: 123456)
-INSERT INTO `user` (`id`, `username`, `password`, `nickname`, `role`, `create_time`, `update_time`) 
-VALUES (1, 'admin', '123456', '管理员', 'admin', NOW(), NOW());
+INSERT INTO `user` (`id`, `username`, `password`, `nickname`, `role`, `status`, `create_time`, `update_time`) 
+VALUES (1, 'admin', '123456', '管理员', 'admin', 'normal', NOW(), NOW());
 
 -- ----------------------------
 -- 2. 家谱表
