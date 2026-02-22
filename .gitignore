@@ -34,6 +34,10 @@ npm-debug.log*
 kin-legacy-backend/src/main/resources/application-dev.yml
 kin-legacy-backend/src/main/resources/application-prod.yml
 
+# Mini-program config (sensitive)
+kin-legacy-mp/manifest.json
+kin-legacy-mp/project.config.json
+
 # Java compile output
 target/
 *.class
