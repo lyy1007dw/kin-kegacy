@@ -1,4 +1,4 @@
-package com.kin.family.util.code;
+package com.kin.family.util;
 
 import java.util.Random;
 

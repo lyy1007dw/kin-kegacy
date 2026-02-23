@@ -79,10 +79,12 @@ router.beforeEach((to, from, next) => {
     return
   }
 
-  if (userStore.userInfo?.role !== 'admin' && to.path !== '/login') {
-    next('/login')
-    userStore.logout()
-    return
+  if (to.path !== '/login' && to.path !== '/') {
+    if (!userStore.userInfo || userStore.userInfo.globalRole !== 'SUPER_ADMIN') {
+      next('/login')
+      userStore.logout()
+      return
+    }
   }
 
   next()

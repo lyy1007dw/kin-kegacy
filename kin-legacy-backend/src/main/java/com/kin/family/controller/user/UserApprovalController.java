@@ -3,7 +3,7 @@ package com.kin.family.controller.user;
 import com.kin.family.annotation.RequireLogin;
 import com.kin.family.dto.*;
 import com.kin.family.service.ApprovalService;
-import com.kin.family.util.context.UserContext;
+import com.kin.family.util.UserContextUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,7 +40,7 @@ public class UserApprovalController {
             @PathVariable Long requestId,
             @RequestParam Long familyId,
             @RequestBody ApprovalHandleDTO request) {
-        Long userId = UserContext.getUserId();
+        Long userId = UserContextUtil.getUserId();
         approvalService.handleApproval(familyId, requestId, request, userId);
         return Result.success();
     }

@@ -12,6 +12,7 @@ import java.time.LocalDate;
  */
 @Data
 public class MemberCreateDTO {
+    private Long userId;
     private String name;
     private GenderEnum gender;
     private String avatar;

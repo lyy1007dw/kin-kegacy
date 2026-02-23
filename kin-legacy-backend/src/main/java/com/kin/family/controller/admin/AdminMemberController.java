@@ -23,14 +23,14 @@ public class AdminMemberController {
 
     @GetMapping("/member/list")
     @RequireLogin
-    @RequireRole("admin")
+    @RequireRole("SUPER_ADMIN")
     public Result<List<MemberDetailDTO>> getAllMembers() {
         return Result.success(memberService.getAllMembers());
     }
 
     @GetMapping("/member/list/paged")
     @RequireLogin
-    @RequireRole("admin")
+    @RequireRole("SUPER_ADMIN")
     public Result<PageResult<MemberDetailDTO>> getMembersPaged(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
@@ -39,7 +39,7 @@ public class AdminMemberController {
 
     @PostMapping("/member")
     @RequireLogin
-    @RequireRole("admin")
+    @RequireRole("SUPER_ADMIN")
     public Result<MemberDetailDTO> addMember(@RequestBody MemberCreateByAdminDTO request) {
         return Result.success(memberService.addMemberByUser(
                 request.getFamilyId(),

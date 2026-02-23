@@ -4,9 +4,10 @@ import type { PageResult } from './admin'
 export interface User {
   id: number
   nickname: string
+  name: string
   avatar: string
   phone: string
-  role: string
+  globalRole: string
   status: string
   createTime: string
 }
@@ -25,4 +26,8 @@ export const disableUser = (id: number) => {
 
 export const enableUser = (id: number) => {
   return request.put(`/admin/user/${id}/enable`)
+}
+
+export const updateUserName = (name: string) => {
+  return request.put('/user/name', { name })
 }

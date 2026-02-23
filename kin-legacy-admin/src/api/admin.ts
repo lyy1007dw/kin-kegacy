@@ -4,9 +4,10 @@ import type { Family } from './family'
 export interface User {
   id: number
   nickname: string
+  name: string
   avatar: string
   phone: string
-  role: string
+  globalRole: string
   createTime: string
 }
 

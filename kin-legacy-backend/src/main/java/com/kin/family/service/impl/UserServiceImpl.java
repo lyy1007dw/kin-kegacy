@@ -15,14 +15,16 @@ import com.kin.family.constant.UserStatusEnum;
 import com.kin.family.exception.BusinessException;
 import com.kin.family.mapper.UserMapper;
 import com.kin.family.service.UserService;
-import com.kin.family.util.jwt.JwtUtil;
-import com.kin.family.util.context.UserContext;
+import com.kin.family.util.PasswordUtil;
+import com.kin.family.util.JwtUtil;
+import com.kin.family.util.UserContextUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,8 +66,9 @@ public class UserServiceImpl implements UserService {
             user = User.builder()
                     .openid(openid)
                     .nickname("用户" + request.getCode().substring(0, 4))
-                    .role(UserRoleEnum.USER)
+                    .globalRole(UserRoleEnum.NORMAL_USER)
                     .status(UserStatusEnum.NORMAL)
+                    .loginFailCount(0)
                     .build();
             userMapper.insert(user);
         }
@@ -126,7 +129,7 @@ public class UserServiceImpl implements UserService {
         wrapper.eq(User::getUsername, username);
         User user = userMapper.selectOne(wrapper);
 
-        if (user == null || !password.equals(user.getPassword())) {
+        if (user == null) {
             throw new BusinessException("用户名或密码错误");
         }
 
@@ -134,12 +137,39 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException("该账号已被禁用，请联系管理员");
         }
 
+        if (user.getLockTime() != null && user.getLockTime().isAfter(LocalDateTime.now())) {
+            throw new BusinessException("账号已被锁定，请稍后再试");
+        }
+
+        String storedPassword = user.getPassword();
+        boolean passwordMatches;
+        if (PasswordUtil.isEncoded(storedPassword)) {
+            passwordMatches = PasswordUtil.matches(password, storedPassword);
+        } else {
+            passwordMatches = password.equals(storedPassword);
+        }
+
+        if (!passwordMatches) {
+            int failCount = user.getLoginFailCount() != null ? user.getLoginFailCount() + 1 : 1;
+            user.setLoginFailCount(failCount);
+            if (failCount >= 5) {
+                user.setLockTime(LocalDateTime.now().plusMinutes(30));
+            }
+            userMapper.updateById(user);
+            throw new BusinessException("用户名或密码错误");
+        }
+
+        user.setLoginFailCount(0);
+        user.setLockTime(null);
+        user.setLastLoginTime(LocalDateTime.now());
+        userMapper.updateById(user);
+
         return buildAuthTokenDTO(user);
     }
 
     @Override
     public UserDetailDTO getCurrentUser() {
-        Long userId = UserContext.getUserId();
+        Long userId = UserContextUtil.getUserId();
         if (userId == null) {
             throw new BusinessException(401, "请先登录");
         }
@@ -166,7 +196,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<UserDetailDTO> getNonAdminUsers() {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-        wrapper.ne(User::getRole, UserRoleEnum.ADMIN);
+        wrapper.ne(User::getGlobalRole, UserRoleEnum.SUPER_ADMIN);
         List<User> users = userMapper.selectList(wrapper);
         return users.stream()
                 .map(this::convertToUserDetailDTO)
@@ -213,8 +243,8 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException("用户不存在");
         }
 
-        if (user.getRole() == UserRoleEnum.ADMIN) {
-            throw new BusinessException("不能禁用管理员用户");
+        if (user.getGlobalRole() == UserRoleEnum.SUPER_ADMIN) {
+            throw new BusinessException("不能禁用超级管理员");
         }
 
         user.setStatus(UserStatusEnum.DISABLED);
@@ -261,14 +291,15 @@ public class UserServiceImpl implements UserService {
         dto.setNickname(user.getNickname());
         dto.setAvatar(user.getAvatar());
         dto.setPhone(user.getPhone());
-        dto.setRole(user.getRole());
+        dto.setName(user.getName());
+        dto.setGlobalRole(user.getGlobalRole());
         dto.setStatus(user.getStatus());
         dto.setCreateTime(user.getCreateTime());
         return dto;
     }
 
     private AuthTokenDTO buildAuthTokenDTO(User user) {
-        String accessToken = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole().getValue());
+        String accessToken = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getGlobalRole().getValue());
         String refreshToken = jwtUtil.generateRefreshToken(user.getId());
 
         AuthTokenDTO dto = new AuthTokenDTO();
@@ -278,7 +309,7 @@ public class UserServiceImpl implements UserService {
         dto.setExpiresIn(jwtProperties.getExpiration() / 1000);
         dto.setUserInfo(convertToUserDetailDTO(user));
 
-        UserContext.setUserId(user.getId());
+        UserContextUtil.setUserId(user.getId());
         return dto;
     }
 
@@ -299,5 +330,34 @@ public class UserServiceImpl implements UserService {
         }
 
         return buildAuthTokenDTO(user);
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
+    public void updateUserName(Long userId, String newName) {
+        if (newName == null || newName.trim().isEmpty()) {
+            throw new BusinessException("姓名不能为空");
+        }
+
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+
+        String oldName = user.getName();
+        user.setName(newName.trim());
+        userMapper.updateById(user);
+
+        List<com.kin.family.entity.FamilyMember> members = memberMapper.selectList(
+                new LambdaQueryWrapper<com.kin.family.entity.FamilyMember>()
+                        .eq(com.kin.family.entity.FamilyMember::getUserId, userId)
+        );
+
+        for (com.kin.family.entity.FamilyMember member : members) {
+            member.setName(newName.trim());
+            memberMapper.updateById(member);
+        }
+
+        log.info("用户姓名修改：userId={}, {} -> {}, 同步更新了 {} 个成员", userId, oldName, newName, members.size());
     }
 }

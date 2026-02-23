@@ -5,9 +5,10 @@ import request from '@/utils/request'
 export interface UserInfo {
   id: number
   nickname: string
+  name: string
   avatar: string
   phone: string
-  role: string
+  globalRole: string
 }
 
 export interface LoginResponse {

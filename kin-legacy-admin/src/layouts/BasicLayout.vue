@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { NLayout, NLayoutSider, NLayoutContent, NMenu, NAvatar, NDropdown, NSwitch, NTooltip } from 'naive-ui'
 import { useUserStore } from '@/stores/user'
+import request from '@/utils/request'
 
 const router = useRouter()
 const route = useRoute()
@@ -41,6 +42,19 @@ const toggleTheme = () => {
   document.documentElement.setAttribute('data-theme', isDark.value ? 'dark' : 'light')
   window.dispatchEvent(new CustomEvent('theme-change', { detail: isDark.value }))
 }
+
+const fetchUserInfo = async () => {
+  try {
+    const res = await request.get('/user/me')
+    userStore.userInfo = res.data
+  } catch (e) {
+    console.error('获取用户信息失败', e)
+  }
+}
+
+onMounted(() => {
+  fetchUserInfo()
+})
 </script>
 
 <template>

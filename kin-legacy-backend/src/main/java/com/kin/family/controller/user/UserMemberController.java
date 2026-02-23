@@ -3,7 +3,7 @@ package com.kin.family.controller.user;
 import com.kin.family.annotation.RequireLogin;
 import com.kin.family.dto.*;
 import com.kin.family.service.MemberService;
-import com.kin.family.util.context.UserContext;
+import com.kin.family.util.UserContextUtil;
 import com.kin.family.vo.TreeNodeVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -47,7 +47,7 @@ public class UserMemberController {
     public Result<MemberDetailDTO> addMember(
             @PathVariable Long familyId,
             @RequestBody MemberCreateDTO request) {
-        Long userId = UserContext.getUserId();
+        Long userId = UserContextUtil.getUserId();
         return Result.success(memberService.addMember(familyId, request, userId));
     }
 
@@ -57,7 +57,7 @@ public class UserMemberController {
             @PathVariable Long familyId,
             @PathVariable Long id,
             @RequestBody MemberEditDTO request) {
-        Long userId = UserContext.getUserId();
+        Long userId = UserContextUtil.getUserId();
         memberService.applyEditMember(familyId, id, request, userId);
         return Result.success();
     }
@@ -68,7 +68,7 @@ public class UserMemberController {
             @PathVariable Long familyId,
             @PathVariable Long id,
             @RequestBody MemberCreateDTO request) {
-        Long userId = UserContext.getUserId();
+        Long userId = UserContextUtil.getUserId();
         return Result.success(memberService.updateMember(familyId, id, request, userId));
     }
 
@@ -77,7 +77,7 @@ public class UserMemberController {
     public Result<Void> deleteMember(
             @PathVariable Long familyId,
             @PathVariable Long id) {
-        Long userId = UserContext.getUserId();
+        Long userId = UserContextUtil.getUserId();
         memberService.deleteMember(familyId, id, userId);
         return Result.success();
     }

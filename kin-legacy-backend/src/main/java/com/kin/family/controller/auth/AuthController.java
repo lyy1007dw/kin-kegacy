@@ -1,10 +1,9 @@
 package com.kin.family.controller.auth;
 
 import com.kin.family.annotation.RequireLogin;
-import com.kin.family.annotation.RequireRole;
 import com.kin.family.dto.*;
 import com.kin.family.service.UserService;
-import com.kin.family.util.context.UserContext;
+import com.kin.family.util.UserContextUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -44,7 +43,7 @@ public class AuthController {
     @PostMapping("/logout")
     @RequireLogin
     public Result<Void> logout() {
-        UserContext.clear();
+        UserContextUtil.clear();
         return Result.success();
     }
 }

@@ -24,28 +24,28 @@ public class AdminUserController {
 
     @GetMapping("/statistics")
     @RequireLogin
-    @RequireRole("admin")
+    @RequireRole("SUPER_ADMIN")
     public Result<Map<String, Object>> getStatistics() {
         return Result.success(userService.getStatistics());
     }
 
     @GetMapping("/user/list")
     @RequireLogin
-    @RequireRole("admin")
+    @RequireRole("SUPER_ADMIN")
     public Result<List<UserDetailDTO>> getAllUsers() {
         return Result.success(userService.getAllUsers());
     }
 
     @GetMapping("/user/list/non-admin")
     @RequireLogin
-    @RequireRole("admin")
+    @RequireRole("SUPER_ADMIN")
     public Result<List<UserDetailDTO>> getNonAdminUsers() {
         return Result.success(userService.getNonAdminUsers());
     }
 
     @GetMapping("/user/list/paged")
     @RequireLogin
-    @RequireRole("admin")
+    @RequireRole("SUPER_ADMIN")
     public Result<PageResult<UserDetailDTO>> getUsersPaged(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
@@ -54,14 +54,14 @@ public class AdminUserController {
 
     @PutMapping("/user/{id}")
     @RequireLogin
-    @RequireRole("admin")
+    @RequireRole("SUPER_ADMIN")
     public Result<UserDetailDTO> updateUser(@PathVariable Long id, @RequestBody UserDetailDTO request) {
         return Result.success(userService.updateUser(id, request));
     }
 
     @PutMapping("/user/{id}/disable")
     @RequireLogin
-    @RequireRole("admin")
+    @RequireRole("SUPER_ADMIN")
     public Result<Void> disableUser(@PathVariable Long id) {
         userService.disableUser(id);
         return Result.success();
@@ -69,7 +69,7 @@ public class AdminUserController {
 
     @PutMapping("/user/{id}/enable")
     @RequireLogin
-    @RequireRole("admin")
+    @RequireRole("SUPER_ADMIN")
     public Result<Void> enableUser(@PathVariable Long id) {
         userService.enableUser(id);
         return Result.success();

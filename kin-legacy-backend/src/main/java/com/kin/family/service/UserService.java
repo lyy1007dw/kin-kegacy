@@ -26,4 +26,12 @@ public interface UserService {
     void disableUser(Long userId);
     void enableUser(Long userId);
     Map<String, Object> getStatistics();
+
+    /**
+     * 更新用户姓名并同步到所有家谱成员
+     *
+     * @param userId  用户ID
+     * @param newName 新姓名
+     */
+    void updateUserName(Long userId, String newName);
 }

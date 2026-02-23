@@ -11,6 +11,13 @@
     </view>
 
     <view class="jpu-menu-card">
+      <view class="jpu-menu-item" @click="showEditNameDialog">
+        <text class="jpu-menu-text">真实姓名</text>
+        <view class="jpu-menu-right">
+          <text class="jpu-menu-value">{{ userInfo && userInfo.name || '未设置' }}</text>
+          <text class="jpu-menu-arrow">❯</text>
+        </view>
+      </view>
       <view class="jpu-menu-item" @click="navigateTo('/pages/settings/settings')">
         <text class="jpu-menu-text">账号设置</text>
         <text class="jpu-menu-arrow">❯</text>
@@ -32,6 +39,7 @@
 
 <script>
 import { mapState, mapActions } from 'vuex'
+import api from '@/utils/api.js'
 
 export default {
   computed: {
@@ -49,6 +57,35 @@ export default {
 
     navigateTo(url) {
       uni.showToast({ title: '功能开发中', icon: 'none' })
+    },
+
+    showEditNameDialog() {
+      const self = this
+      uni.showModal({
+        title: '修改姓名',
+        placeholderText: '请输入真实姓名',
+        editable: true,
+        content: self.userInfo && self.userInfo.name || '',
+        success: function(res) {
+          if (res.confirm && res.content) {
+            self.updateName(res.content)
+          }
+        }
+      })
+    },
+
+    async updateName(name) {
+      if (!name || !name.trim()) {
+        uni.showToast({ title: '姓名不能为空', icon: 'none' })
+        return
+      }
+      try {
+        await api.user.updateName(name.trim())
+        uni.showToast({ title: '姓名修改成功', icon: 'success' })
+        this.getUserInfo()
+      } catch (e) {
+        uni.showToast({ title: e.message || '修改失败', icon: 'none' })
+      }
     },
 
     handleLogout() {
@@ -150,6 +187,17 @@ export default {
   align-items: center;
   padding: 32rpx;
   border-bottom: 2rpx solid var(--theme-border);
+}
+
+.jpu-menu-right {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.jpu-menu-value {
+  font-size: 28rpx;
+  color: #8D6E63;
 }
 
 .jpu-menu-item:last-child {

@@ -24,7 +24,8 @@ public class UserConverter {
         dto.setNickname(user.getNickname());
         dto.setAvatar(user.getAvatar());
         dto.setPhone(user.getPhone());
-        dto.setRole(user.getRole());
+        dto.setName(user.getName());
+        dto.setGlobalRole(user.getGlobalRole());
         dto.setStatus(user.getStatus());
         dto.setCreateTime(user.getCreateTime());
         return dto;

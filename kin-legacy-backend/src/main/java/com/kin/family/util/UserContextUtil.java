@@ -1,14 +1,14 @@
-package com.kin.family.util.context;
+package com.kin.family.util;
 
 /**
  * 用户上下文
  *
  * @author candong
  */
-public class UserContext {
+public class UserContextUtil {
     private static final ThreadLocal<Long> USER_ID = new ThreadLocal<>();
     private static final ThreadLocal<String> USERNAME = new ThreadLocal<>();
-    private static final ThreadLocal<String> ROLE = new ThreadLocal<>();
+    private static final ThreadLocal<String> GLOBAL_ROLE = new ThreadLocal<>();
 
     public static void setUserId(Long userId) {
         USER_ID.set(userId);
@@ -26,17 +26,17 @@ public class UserContext {
         return USERNAME.get();
     }
 
-    public static void setRole(String role) {
-        ROLE.set(role);
+    public static void setGlobalRole(String globalRole) {
+        GLOBAL_ROLE.set(globalRole);
     }
 
-    public static String getRole() {
-        return ROLE.get();
+    public static String getGlobalRole() {
+        return GLOBAL_ROLE.get();
     }
 
     public static void clear() {
         USER_ID.remove();
         USERNAME.remove();
-        ROLE.remove();
+        GLOBAL_ROLE.remove();
     }
 }

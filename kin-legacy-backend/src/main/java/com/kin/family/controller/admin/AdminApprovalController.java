@@ -31,7 +31,7 @@ public class AdminApprovalController {
 
     @PostMapping("/approval/{familyId}/{requestId}/handle")
     @RequireLogin
-    @RequireRole("admin")
+    @RequireRole("SUPER_ADMIN")
     public Result<Void> handleApproval(
             @PathVariable Long familyId,
             @PathVariable Long requestId,

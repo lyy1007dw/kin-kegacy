@@ -36,6 +36,7 @@ export default {
 
   user: {
     getCurrent: () => get('/user/me'),
-    update: (id, data) => put(`/user/${id}`, data)
+    update: (id, data) => put(`/user/${id}`, data),
+    updateName: (name) => put('/user/name', { name })
   }
 }

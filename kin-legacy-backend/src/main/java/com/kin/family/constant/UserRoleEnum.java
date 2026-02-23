@@ -5,14 +5,15 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
 
 /**
- * 用户角色枚举
+ * 用户全局角色枚举
  *
  * @author candong
  */
 @Getter
 public enum UserRoleEnum {
-    ADMIN("admin", "管理员"),
-    USER("user", "普通用户");
+    SUPER_ADMIN("SUPER_ADMIN", "超级管理员"),
+    GENEALOGY_ADMIN("GENEALOGY_ADMIN", "家谱管理员"),
+    NORMAL_USER("NORMAL_USER", "普通用户");
 
     @EnumValue
     @JsonValue
@@ -22,5 +23,13 @@ public enum UserRoleEnum {
     UserRoleEnum(String value, String description) {
         this.value = value;
         this.description = description;
+    }
+
+    public boolean isAdmin() {
+        return this == SUPER_ADMIN || this == GENEALOGY_ADMIN;
+    }
+
+    public boolean isSuperAdmin() {
+        return this == SUPER_ADMIN;
     }
 }

@@ -2,8 +2,8 @@ package com.kin.family.config.jwt;
 
 import com.kin.family.annotation.RequireLogin;
 import com.kin.family.annotation.RequireRole;
-import com.kin.family.util.jwt.JwtUtil;
-import com.kin.family.util.context.UserContext;
+import com.kin.family.util.JwtUtil;
+import com.kin.family.util.UserContextUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -48,15 +48,19 @@ public class JwtAuthenticationInterceptor implements HandlerInterceptor {
 
         Long userId = jwtUtil.getUserIdFromToken(token);
         String username = jwtUtil.getUsernameFromToken(token);
-        String role = jwtUtil.getRoleFromToken(token);
+        String globalRole = jwtUtil.getGlobalRoleFromToken(token);
+        
+        if (globalRole == null) {
+            throw new com.kin.family.exception.BusinessException(401, "Token版本过期，请重新登录");
+        }
 
-        UserContext.setUserId(userId);
-        UserContext.setUsername(username);
-        UserContext.setRole(role);
+        UserContextUtil.setUserId(userId);
+        UserContextUtil.setUsername(username);
+        UserContextUtil.setGlobalRole(globalRole);
 
         if (handlerMethod.hasMethodAnnotation(RequireRole.class)) {
             String requiredRole = handlerMethod.getMethodAnnotation(RequireRole.class).value();
-            if (!requiredRole.equals(role)) {
+            if (!requiredRole.equals(globalRole)) {
                 throw new com.kin.family.exception.BusinessException(403, "权限不足");
             }
         }
@@ -66,6 +70,6 @@ public class JwtAuthenticationInterceptor implements HandlerInterceptor {
 
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
-        UserContext.clear();
+        UserContextUtil.clear();
     }
 }

@@ -17,7 +17,8 @@ public class UserDetailDTO {
     private String nickname;
     private String avatar;
     private String phone;
-    private UserRoleEnum role;
+    private String name;
+    private UserRoleEnum globalRole;
     private UserStatusEnum status;
     private LocalDateTime createTime;
 }

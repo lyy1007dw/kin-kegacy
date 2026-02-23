@@ -1,4 +1,4 @@
-package com.kin.family.util.jwt;
+package com.kin.family.util;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -29,11 +29,11 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateToken(Long userId, String username, String role) {
+    public String generateToken(Long userId, String username, String globalRole) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
         claims.put("username", username);
-        claims.put("role", role);
+        claims.put("globalRole", globalRole);
         return createToken(claims, jwtProperties.getExpiration());
     }
 
@@ -74,9 +74,13 @@ public class JwtUtil {
         return claims.get("username", String.class);
     }
 
-    public String getRoleFromToken(String token) {
+    public String getGlobalRoleFromToken(String token) {
         Claims claims = parseToken(token);
-        return claims.get("role", String.class);
+        String globalRole = claims.get("globalRole", String.class);
+        if (globalRole == null) {
+            return null;
+        }
+        return globalRole;
     }
 
     public boolean validateToken(String token) {

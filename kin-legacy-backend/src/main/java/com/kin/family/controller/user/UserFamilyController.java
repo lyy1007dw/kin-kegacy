@@ -3,7 +3,7 @@ package com.kin.family.controller.user;
 import com.kin.family.annotation.RequireLogin;
 import com.kin.family.dto.*;
 import com.kin.family.service.FamilyService;
-import com.kin.family.util.context.UserContext;
+import com.kin.family.util.UserContextUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,14 +24,14 @@ public class UserFamilyController {
     @PostMapping("/create")
     @RequireLogin
     public Result<FamilyDetailDTO> createFamily(@RequestBody FamilyCreateDTO request) {
-        Long userId = UserContext.getUserId();
+        Long userId = UserContextUtil.getUserId();
         return Result.success(familyService.createFamily(request, userId));
     }
 
     @PostMapping("/join")
     @RequireLogin
     public Result<Void> joinFamily(@RequestBody FamilyJoinDTO request) {
-        Long userId = UserContext.getUserId();
+        Long userId = UserContextUtil.getUserId();
         familyService.joinFamily(request, userId);
         return Result.success();
     }
@@ -44,7 +44,7 @@ public class UserFamilyController {
     @GetMapping("/mine")
     @RequireLogin
     public Result<List<FamilyDetailDTO>> getMyFamilies() {
-        Long userId = UserContext.getUserId();
+        Long userId = UserContextUtil.getUserId();
         return Result.success(familyService.getMyFamilies(userId));
     }
 
@@ -68,14 +68,14 @@ public class UserFamilyController {
     @PutMapping("/{id}")
     @RequireLogin
     public Result<FamilyDetailDTO> updateFamily(@PathVariable Long id, @RequestBody FamilyCreateDTO request) {
-        Long userId = UserContext.getUserId();
+        Long userId = UserContextUtil.getUserId();
         return Result.success(familyService.updateFamily(id, request, userId));
     }
 
     @DeleteMapping("/{id}")
     @RequireLogin
     public Result<Void> deleteFamily(@PathVariable Long id) {
-        Long userId = UserContext.getUserId();
+        Long userId = UserContextUtil.getUserId();
         familyService.deleteFamily(id, userId);
         return Result.success();
     }

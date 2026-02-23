@@ -1,8 +1,7 @@
 package com.kin.family.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
-import com.kin.family.constant.UserRoleEnum;
-import com.kin.family.constant.UserStatusEnum;
+import com.kin.family.constant.GenealogyRoleEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,7 +10,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * 用户实体
+ * 用户-家谱关联实体
  *
  * @author candong
  */
@@ -19,35 +18,23 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@TableName("user")
-public class User {
+@TableName("user_genealogy")
+public class UserGenealogy {
 
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    private String openid;
+    private Long userId;
 
-    private String username;
+    private Long genealogyId;
 
-    private String password;
+    private GenealogyRoleEnum role;
 
-    private String nickname;
+    private Long familyMemberId;
 
-    private String avatar;
+    private LocalDateTime joinedAt;
 
-    private String phone;
-
-    private String name;
-
-    private UserRoleEnum globalRole;
-
-    private LocalDateTime lastLoginTime;
-
-    private Integer loginFailCount;
-
-    private LocalDateTime lockTime;
-
-    private UserStatusEnum status;
+    private Long createdBy;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

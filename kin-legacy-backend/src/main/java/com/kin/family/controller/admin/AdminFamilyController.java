@@ -23,14 +23,14 @@ public class AdminFamilyController {
 
     @GetMapping("/family/list")
     @RequireLogin
-    @RequireRole("admin")
+    @RequireRole("SUPER_ADMIN")
     public Result<List<FamilyDetailDTO>> getAllFamilies() {
         return Result.success(familyService.getAllFamilies());
     }
 
     @GetMapping("/family/list/paged")
     @RequireLogin
-    @RequireRole("admin")
+    @RequireRole("SUPER_ADMIN")
     public Result<PageResult<FamilyDetailDTO>> getFamiliesPaged(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {

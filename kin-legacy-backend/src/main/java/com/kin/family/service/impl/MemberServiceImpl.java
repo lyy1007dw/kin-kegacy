@@ -125,6 +125,16 @@ public class MemberServiceImpl implements MemberService {
             throw new BusinessException(403, "只有创建者才能添加成员");
         }
 
+        if (request.getUserId() != null) {
+            User linkedUser = userMapper.selectById(request.getUserId());
+            if (linkedUser != null && linkedUser.getName() != null && !linkedUser.getName().isEmpty()) {
+                if (request.getName() != null && !request.getName().equals(linkedUser.getName())) {
+                    throw new BusinessException("成员姓名必须与关联用户姓名一致");
+                }
+                request.setName(linkedUser.getName());
+            }
+        }
+
         if (request.getName() == null || request.getName().isEmpty()) {
             throw new BusinessException("姓名不能为空");
         }
@@ -134,6 +144,7 @@ public class MemberServiceImpl implements MemberService {
 
         FamilyMember member = FamilyMember.builder()
                 .familyId(familyId)
+                .userId(request.getUserId())
                 .name(request.getName())
                 .gender(request.getGender())
                 .avatar(request.getAvatar())
@@ -282,6 +293,13 @@ public class MemberServiceImpl implements MemberService {
         FamilyMember member = memberMapper.selectById(memberId);
         if (member == null || !member.getFamilyId().equals(familyId)) {
             throw new BusinessException("成员不存在");
+        }
+
+        if (request.getName() != null && member.getUserId() != null) {
+            User linkedUser = userMapper.selectById(member.getUserId());
+            if (linkedUser != null && !request.getName().equals(linkedUser.getName())) {
+                throw new BusinessException("该成员已关联用户账号，姓名不允许直接修改，请通过用户管理修改");
+            }
         }
 
         if (request.getName() != null) {

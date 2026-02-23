@@ -1,8 +1,8 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
+import axios, { AxiosInstance, AxiosResponse } from 'axios'
 import { useUserStore } from '@/stores/user'
 import { createDiscreteApi } from 'naive-ui'
 
-const { message } = createDiscreteApi(['message'], {
+const { message, dialog } = createDiscreteApi(['message', 'dialog'], {
   configProviderProps: {
     placement: 'top',
     maxWidth: '400px'
@@ -15,7 +15,7 @@ const service: AxiosInstance = axios.create({
 })
 
 let isRefreshing = false
-let requests: Array<(token: string) => void> = []
+let hasShownAuthError = false
 
 service.interceptors.request.use(
   (config) => {
@@ -31,50 +31,83 @@ service.interceptors.request.use(
 )
 
 service.interceptors.response.use(
-  (response: AxiosResponse) => {
+  async (response: AxiosResponse) => {
     const res = response.data
     if (res.code !== 200) {
       const errorMsg = res.message || '请求失败'
-      message.error(errorMsg)
+      const errorCode = res.code
+      
+      if (errorCode === 401 || errorCode === 403) {
+        if (!hasShownAuthError) {
+          hasShownAuthError = true
+          const userStore = useUserStore()
+          userStore.logout()
+          dialog.error({
+            title: errorCode === 401 ? '登录失效' : '权限不足',
+            content: errorMsg,
+            positiveText: '重新登录',
+            maskClosable: false,
+            onPositiveClick: () => {
+              hasShownAuthError = false
+              window.location.href = '/login'
+            }
+          })
+        }
+        return Promise.reject(new Error(errorMsg))
+      }
+      
+      if (errorMsg.includes('锁定') || errorMsg.includes('禁用')) {
+        dialog.error({
+          title: '操作失败',
+          content: errorMsg,
+          positiveText: '确定',
+          maskClosable: false
+        })
+      } else {
+        message.error(errorMsg)
+      }
+      
       return Promise.reject(new Error(errorMsg))
     }
     return res
   },
   async (error) => {
     const userStore = useUserStore()
+    const status = error.response?.status
+    const errorMsg = error.response?.data?.message || '网络错误'
     
-    if (error.response?.status === 401) {
-      if (!isRefreshing) {
-        isRefreshing = true
-        const success = await userStore.refreshTokenHandler()
-        isRefreshing = false
-        
-        if (success) {
-          requests.forEach(callback => callback(userStore.token))
-          requests = []
-          return service(error.config)
-        } else {
+    if (status === 401 && !hasShownAuthError) {
+      hasShownAuthError = true
+      userStore.logout()
+      dialog.error({
+        title: '登录失效',
+        content: errorMsg || '登录已过期，请重新登录',
+        positiveText: '重新登录',
+        maskClosable: false,
+        onPositiveClick: () => {
+          hasShownAuthError = false
           window.location.href = '/login'
-          return Promise.reject(error)
         }
-      } else {
-        return new Promise((resolve) => {
-          requests.push((token: string) => {
-            error.config.headers.Authorization = `Bearer ${token}`
-            resolve(service(error.config))
-          })
-        })
-      }
+      })
+      return Promise.reject(error)
     }
     
-    let errorMsg = '网络错误'
-    if (error.response?.data?.message) {
-      errorMsg = error.response.data.message
-    } else if (error.response?.data?.msg) {
-      errorMsg = error.response.data.msg
-    } else if (error.message) {
-      errorMsg = error.message
+    if (status === 403 && !hasShownAuthError) {
+      hasShownAuthError = true
+      userStore.logout()
+      dialog.error({
+        title: '权限不足',
+        content: errorMsg || '您没有权限访问该功能',
+        positiveText: '重新登录',
+        maskClosable: false,
+        onPositiveClick: () => {
+          hasShownAuthError = false
+          window.location.href = '/login'
+        }
+      })
+      return Promise.reject(error)
     }
+    
     message.error(errorMsg)
     return Promise.reject(new Error(errorMsg))
   }

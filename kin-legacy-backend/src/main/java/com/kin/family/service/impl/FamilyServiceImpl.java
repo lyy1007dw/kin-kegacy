@@ -13,14 +13,15 @@ import com.kin.family.entity.JoinRequest;
 import com.kin.family.entity.User;
 import com.kin.family.constant.GenderEnum;
 import com.kin.family.constant.RequestStatusEnum;
-import com.kin.family.constant.UserRoleEnum;
 import com.kin.family.exception.BusinessException;
 import com.kin.family.mapper.FamilyMapper;
 import com.kin.family.mapper.FamilyMemberMapper;
 import com.kin.family.mapper.JoinRequestMapper;
 import com.kin.family.mapper.UserMapper;
+import com.kin.family.mapper.UserGenealogyMapper;
 import com.kin.family.service.FamilyService;
-import com.kin.family.util.code.FamilyCodeUtil;
+import com.kin.family.service.UserRoleService;
+import com.kin.family.util.FamilyCodeUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +41,8 @@ public class FamilyServiceImpl implements FamilyService {
     private final FamilyMemberMapper memberMapper;
     private final JoinRequestMapper joinRequestMapper;
     private final UserMapper userMapper;
+    private final UserGenealogyMapper userGenealogyMapper;
+    private final UserRoleService userRoleService;
 
     @Override
     @Transactional
@@ -63,10 +66,11 @@ public class FamilyServiceImpl implements FamilyService {
         familyMapper.insert(family);
 
         User user = userMapper.selectById(userId);
-        boolean isAdmin = user != null && user.getRole() == UserRoleEnum.ADMIN;
+        boolean isAdmin = user != null && user.getGlobalRole().isAdmin();
 
+        FamilyMember creatorMember = null;
         if (!isAdmin) {
-            FamilyMember creator = FamilyMember.builder()
+            creatorMember = FamilyMember.builder()
                     .familyId(family.getId())
                     .userId(userId)
                     .name(user != null ? user.getNickname() : "创建者")
@@ -74,8 +78,11 @@ public class FamilyServiceImpl implements FamilyService {
                     .avatar(user != null ? user.getAvatar() : null)
                     .isCreator(1)
                     .build();
-            memberMapper.insert(creator);
+            memberMapper.insert(creatorMember);
         }
+
+        userRoleService.createUserGenealogy(userId, family.getId(), "ADMIN", 
+                creatorMember != null ? creatorMember.getId() : null, userId);
 
         return convertToDetailDTO(family);
     }

@@ -5,14 +5,15 @@ import {
   NForm, NFormItem, NInput, useMessage, useDialog, NPagination
 } from 'naive-ui'
 import type { DataTableColumns } from 'naive-ui'
-import { getUserList, updateUser, disableUser, enableUser } from '@/api/user'
+import { getUserList, updateUser, updateUserName, disableUser, enableUser } from '@/api/user'
 
 export interface User {
   id: number
   nickname: string
+  name: string
   avatar: string
   phone: string
-  role: string
+  globalRole: string
   status: string
   createTime: string
 }
@@ -26,7 +27,8 @@ const editingUser = ref<User | null>(null)
 
 const formValue = ref({
   nickname: '',
-  phone: ''
+  phone: '',
+  name: ''
 })
 
 const pagination = ref({
@@ -36,7 +38,7 @@ const pagination = ref({
   pageSizes: [5, 10, 20, 50]
 })
 
-const isAdmin = (row: User) => row.role === 'admin' || row.id === 1
+const isAdmin = (row: User) => row.globalRole === 'SUPER_ADMIN'
 
 const columns: DataTableColumns<User> = [
   { title: 'ID', key: 'id', width: 80, align: 'center' },
@@ -44,10 +46,22 @@ const columns: DataTableColumns<User> = [
   { title: '手机号', key: 'phone', minWidth: 130 },
   { 
     title: '角色', 
-    key: 'role',
-    width: 120,
+    key: 'globalRole',
+    width: 150,
     align: 'center',
-    render: (row) => h(NTag, { type: row.role === 'admin' ? 'error' : 'default', size: 'small' }, { default: () => row.role === 'admin' ? '管理员' : '普通用户' })
+    render: (row) => {
+      const roleMap: Record<string, string> = {
+        'SUPER_ADMIN': '超级管理员',
+        'GENEALOGY_ADMIN': '家谱管理员',
+        'NORMAL_USER': '普通用户'
+      }
+      const typeMap: Record<string, 'error' | 'warning' | 'default'> = {
+        'SUPER_ADMIN': 'error',
+        'GENEALOGY_ADMIN': 'warning',
+        'NORMAL_USER': 'default'
+      }
+      return h(NTag, { type: typeMap[row.globalRole] || 'default', size: 'small' }, { default: () => roleMap[row.globalRole] || row.globalRole })
+    }
   },
   { 
     title: '状态', 
@@ -118,7 +132,8 @@ const handleEdit = (row: User) => {
   editingUser.value = row
   formValue.value = {
     nickname: row.nickname,
-    phone: row.phone || ''
+    phone: row.phone || '',
+    name: row.name || ''
   }
   showModal.value = true
 }
@@ -130,10 +145,13 @@ const handleUpdate = async () => {
       nickname: formValue.value.nickname,
       phone: formValue.value.phone
     })
+    if (formValue.value.name !== editingUser.value.name) {
+      await updateUserName(formValue.value.name)
+    }
     message.success('更新成功')
     showModal.value = false
     editingUser.value = null
-    formValue.value = { nickname: '', phone: '' }
+    formValue.value = { nickname: '', phone: '', name: '' }
     fetchData()
   } catch (error: any) {
     message.error(error.message || '更新失败')
@@ -179,7 +197,7 @@ const handleEnable = (row: User) => {
 const handleCloseModal = () => {
   showModal.value = false
   editingUser.value = null
-  formValue.value = { nickname: '', phone: '' }
+  formValue.value = { nickname: '', phone: '', name: '' }
 }
 </script>
 
@@ -221,6 +239,9 @@ const handleCloseModal = () => {
       @after-leave="handleCloseModal"
     >
       <NForm :model="formValue" label-placement="left" label-width="70">
+        <NFormItem label="姓名" path="name">
+          <NInput v-model:value="formValue.name" placeholder="真实姓名（全局统一）" />
+        </NFormItem>
         <NFormItem label="昵称" required>
           <NInput v-model:value="formValue.nickname" placeholder="请输入昵称" />
         </NFormItem>
