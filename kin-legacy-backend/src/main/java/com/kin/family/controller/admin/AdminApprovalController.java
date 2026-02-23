@@ -7,6 +7,11 @@ import com.kin.family.service.ApprovalService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 管理员审批控制器
+ *
+ * @author candong
+ */
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
@@ -16,7 +21,7 @@ public class AdminApprovalController {
 
     @GetMapping("/approvals")
     @RequireLogin
-    public Result<PageResult<ApprovalResponse>> getAllApprovals(
+    public Result<PageResult<ApprovalDetailDTO>> getAllApprovals(
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "1") Integer page,
@@ -30,7 +35,7 @@ public class AdminApprovalController {
     public Result<Void> handleApproval(
             @PathVariable Long familyId,
             @PathVariable Long requestId,
-            @RequestBody HandleApprovalRequest request) {
+            @RequestBody ApprovalHandleDTO request) {
         approvalService.handleApprovalAdmin(familyId, requestId, request);
         return Result.success();
     }

@@ -9,6 +9,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 管理员家谱控制器
+ *
+ * @author candong
+ */
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
@@ -19,14 +24,14 @@ public class AdminFamilyController {
     @GetMapping("/family/list")
     @RequireLogin
     @RequireRole("admin")
-    public Result<List<FamilyDetailResponse>> getAllFamilies() {
+    public Result<List<FamilyDetailDTO>> getAllFamilies() {
         return Result.success(familyService.getAllFamilies());
     }
 
     @GetMapping("/family/list/paged")
     @RequireLogin
     @RequireRole("admin")
-    public Result<PageResult<FamilyDetailResponse>> getFamiliesPaged(
+    public Result<PageResult<FamilyDetailDTO>> getFamiliesPaged(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
         return Result.success(familyService.getFamiliesPaged(page, size));

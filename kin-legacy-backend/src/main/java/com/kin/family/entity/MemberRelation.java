@@ -1,15 +1,19 @@
 package com.kin.family.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
-import com.kin.family.enums.RelationType;
+import com.kin.family.constant.RelationTypeEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.apache.ibatis.type.EnumTypeHandler;
 
 import java.time.LocalDateTime;
 
+/**
+ * 成员关系实体
+ *
+ * @author candong
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -26,8 +30,7 @@ public class MemberRelation {
 
     private Long toMemberId;
 
-    @TableField(value = "relation_type", typeHandler = EnumTypeHandler.class)
-    private RelationType relationType;
+    private RelationTypeEnum relationType;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

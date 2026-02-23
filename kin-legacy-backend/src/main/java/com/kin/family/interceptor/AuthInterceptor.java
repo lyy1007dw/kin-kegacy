@@ -1,4 +1,4 @@
-package com.kin.family.config;
+package com.kin.family.interceptor;
 
 import com.kin.family.util.context.UserContext;
 import jakarta.servlet.http.HttpServletRequest;
@@ -6,6 +6,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+/**
+ * 认证拦截器
+ *
+ * @author candong
+ */
 @Component
 public class AuthInterceptor implements HandlerInterceptor {
 

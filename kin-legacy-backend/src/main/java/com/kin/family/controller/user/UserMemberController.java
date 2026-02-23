@@ -4,11 +4,17 @@ import com.kin.family.annotation.RequireLogin;
 import com.kin.family.dto.*;
 import com.kin.family.service.MemberService;
 import com.kin.family.util.context.UserContext;
+import com.kin.family.vo.TreeNodeVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 用户成员控制器
+ *
+ * @author candong
+ */
 @RestController
 @RequestMapping("/api/family/{familyId}")
 @RequiredArgsConstructor
@@ -18,7 +24,7 @@ public class UserMemberController {
 
     @GetMapping("/members")
     @RequireLogin
-    public Result<List<MemberResponse>> getMembers(@PathVariable Long familyId) {
+    public Result<List<MemberDetailDTO>> getMembers(@PathVariable Long familyId) {
         return Result.success(memberService.getMembers(familyId));
     }
 
@@ -30,7 +36,7 @@ public class UserMemberController {
 
     @GetMapping("/member/{id}")
     @RequireLogin
-    public Result<MemberResponse> getMemberById(
+    public Result<MemberDetailDTO> getMemberById(
             @PathVariable Long familyId,
             @PathVariable Long id) {
         return Result.success(memberService.getMemberById(familyId, id));
@@ -38,9 +44,9 @@ public class UserMemberController {
 
     @PostMapping("/member")
     @RequireLogin
-    public Result<MemberResponse> addMember(
+    public Result<MemberDetailDTO> addMember(
             @PathVariable Long familyId,
-            @RequestBody AddMemberRequest request) {
+            @RequestBody MemberCreateDTO request) {
         Long userId = UserContext.getUserId();
         return Result.success(memberService.addMember(familyId, request, userId));
     }
@@ -50,7 +56,7 @@ public class UserMemberController {
     public Result<Void> applyEditMember(
             @PathVariable Long familyId,
             @PathVariable Long id,
-            @RequestBody EditMemberRequest request) {
+            @RequestBody MemberEditDTO request) {
         Long userId = UserContext.getUserId();
         memberService.applyEditMember(familyId, id, request, userId);
         return Result.success();
@@ -58,10 +64,10 @@ public class UserMemberController {
 
     @PutMapping("/member/{id}")
     @RequireLogin
-    public Result<MemberResponse> updateMember(
+    public Result<MemberDetailDTO> updateMember(
             @PathVariable Long familyId,
             @PathVariable Long id,
-            @RequestBody AddMemberRequest request) {
+            @RequestBody MemberCreateDTO request) {
         Long userId = UserContext.getUserId();
         return Result.success(memberService.updateMember(familyId, id, request, userId));
     }

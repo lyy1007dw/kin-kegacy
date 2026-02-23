@@ -4,8 +4,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
+/**
+ * 统一响应结果
+ *
+ * @author candong
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

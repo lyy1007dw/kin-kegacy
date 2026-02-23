@@ -8,6 +8,11 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * 家谱实体
+ *
+ * @author candong
+ */
 @Data
 @Builder
 @NoArgsConstructor

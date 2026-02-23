@@ -1,23 +1,28 @@
 package com.kin.family.service;
 
-import com.kin.family.dto.AddMemberByUserRequest;
-import com.kin.family.dto.AddMemberRequest;
-import com.kin.family.dto.EditMemberRequest;
-import com.kin.family.dto.MemberResponse;
+import com.kin.family.dto.MemberCreateByAdminDTO;
+import com.kin.family.dto.MemberCreateDTO;
+import com.kin.family.dto.MemberDetailDTO;
+import com.kin.family.dto.MemberEditDTO;
 import com.kin.family.dto.PageResult;
-import com.kin.family.dto.TreeNodeVO;
+import com.kin.family.vo.TreeNodeVO;
 
 import java.util.List;
 
+/**
+ * 成员服务接口
+ *
+ * @author candong
+ */
 public interface MemberService {
-    List<MemberResponse> getMembers(Long familyId);
-    MemberResponse getMemberById(Long familyId, Long memberId);
-    MemberResponse addMember(Long familyId, AddMemberRequest request, Long userId);
-    void applyEditMember(Long familyId, Long memberId, EditMemberRequest request, Long userId);
+    List<MemberDetailDTO> getMembers(Long familyId);
+    MemberDetailDTO getMemberById(Long familyId, Long memberId);
+    MemberDetailDTO addMember(Long familyId, MemberCreateDTO request, Long userId);
+    void applyEditMember(Long familyId, Long memberId, MemberEditDTO request, Long userId);
     List<TreeNodeVO> getFamilyTree(Long familyId);
-    MemberResponse updateMember(Long familyId, Long memberId, AddMemberRequest request, Long userId);
+    MemberDetailDTO updateMember(Long familyId, Long memberId, MemberCreateDTO request, Long userId);
     void deleteMember(Long familyId, Long memberId, Long userId);
-    List<MemberResponse> getAllMembers();
-    PageResult<MemberResponse> getMembersPaged(Integer page, Integer size);
-    MemberResponse addMemberByUser(Long familyId, Long userId, AddMemberByUserRequest request);
+    List<MemberDetailDTO> getAllMembers();
+    PageResult<MemberDetailDTO> getMembersPaged(Integer page, Integer size);
+    MemberDetailDTO addMemberByUser(Long familyId, Long userId, MemberCreateByAdminDTO request);
 }

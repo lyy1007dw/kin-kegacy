@@ -6,7 +6,7 @@ spring:
     name: family-tree
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/family_tree?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false
+    url: jdbc:mysql://localhost:3306/family_tree?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     username: ${spring.datasource.username}
     password: ${spring.datasource.password}
   profiles:
@@ -36,7 +36,7 @@ mybatis-plus:
       logic-delete-field: deleted
       logic-delete-value: 1
       logic-not-delete-value: 0
-  type-enums-package: com.kin.family.enums
+  type-enums-package: com.kin.family.constant
 
 logging:
   level:

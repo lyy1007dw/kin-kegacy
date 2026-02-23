@@ -1,16 +1,20 @@
 package com.kin.family.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
-import com.kin.family.enums.Gender;
+import com.kin.family.constant.GenderEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.apache.ibatis.type.EnumTypeHandler;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * 家族成员实体
+ *
+ * @author candong
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -27,8 +31,7 @@ public class FamilyMember {
 
     private String name;
 
-    @TableField(value = "gender", typeHandler = EnumTypeHandler.class)
-    private Gender gender;
+    private GenderEnum gender;
 
     private String avatar;
 

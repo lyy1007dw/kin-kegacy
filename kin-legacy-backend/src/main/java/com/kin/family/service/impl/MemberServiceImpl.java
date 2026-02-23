@@ -3,20 +3,20 @@ package com.kin.family.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.kin.family.dto.AddMemberByUserRequest;
-import com.kin.family.dto.AddMemberRequest;
-import com.kin.family.dto.EditMemberRequest;
-import com.kin.family.dto.MemberResponse;
+import com.kin.family.dto.MemberCreateByAdminDTO;
+import com.kin.family.dto.MemberCreateDTO;
+import com.kin.family.dto.MemberEditDTO;
+import com.kin.family.dto.MemberDetailDTO;
 import com.kin.family.dto.PageResult;
-import com.kin.family.dto.TreeNodeVO;
+import com.kin.family.vo.TreeNodeVO;
 import com.kin.family.entity.EditRequest;
 import com.kin.family.entity.Family;
 import com.kin.family.entity.FamilyMember;
 import com.kin.family.entity.MemberRelation;
 import com.kin.family.entity.User;
-import com.kin.family.enums.Gender;
-import com.kin.family.enums.RelationType;
-import com.kin.family.enums.RequestStatus;
+import com.kin.family.constant.GenderEnum;
+import com.kin.family.constant.RelationTypeEnum;
+import com.kin.family.constant.RequestStatusEnum;
 import com.kin.family.exception.BusinessException;
 import com.kin.family.mapper.EditRequestMapper;
 import com.kin.family.mapper.FamilyMapper;
@@ -24,7 +24,6 @@ import com.kin.family.mapper.FamilyMemberMapper;
 import com.kin.family.mapper.MemberRelationMapper;
 import com.kin.family.mapper.UserMapper;
 import com.kin.family.service.MemberService;
-import com.kin.family.util.context.UserContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +33,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * 成员服务实现
+ *
+ * @author candong
+ */
 @Service
 @RequiredArgsConstructor
 public class MemberServiceImpl implements MemberService {
@@ -45,7 +49,7 @@ public class MemberServiceImpl implements MemberService {
     private final UserMapper userMapper;
 
     @Override
-    public List<MemberResponse> getMembers(Long familyId) {
+    public List<MemberDetailDTO> getMembers(Long familyId) {
         Family family = familyMapper.selectById(familyId);
         if (family == null) {
             throw new BusinessException("家谱不存在");
@@ -62,13 +66,13 @@ public class MemberServiceImpl implements MemberService {
                         .eq(MemberRelation::getFamilyId, familyId)
         );
 
-        Map<Long, List<MemberResponse>> childrenMap = members.stream()
-                .map(this::convertToResponse)
+        Map<Long, List<MemberDetailDTO>> childrenMap = members.stream()
+                .map(this::convertToDetailDTO)
                 .collect(Collectors.groupingBy(m -> {
                     for (MemberRelation r : relations) {
-                        if (r.getToMemberId().equals(m.getId()) && 
-                            (r.getRelationType() == RelationType.father_son || 
-                             r.getRelationType() == RelationType.mother_son)) {
+                        if (r.getToMemberId().equals(m.getId()) &&
+                            (r.getRelationType() == RelationTypeEnum.FATHER_SON ||
+                             r.getRelationType() == RelationTypeEnum.MOTHER_SON)) {
                             return r.getFromMemberId();
                         }
                     }
@@ -78,24 +82,24 @@ public class MemberServiceImpl implements MemberService {
         return members.stream()
                 .filter(m -> {
                     for (MemberRelation r : relations) {
-                        if (r.getToMemberId().equals(m.getId()) && 
-                            (r.getRelationType() == RelationType.father_son || 
-                             r.getRelationType() == RelationType.mother_son)) {
+                        if (r.getToMemberId().equals(m.getId()) &&
+                            (r.getRelationType() == RelationTypeEnum.FATHER_SON ||
+                             r.getRelationType() == RelationTypeEnum.MOTHER_SON)) {
                             return false;
                         }
                     }
                     return true;
                 })
                 .map(m -> {
-                    MemberResponse response = convertToResponse(m);
-                    response.setChildren(childrenMap.getOrDefault(m.getId(), new ArrayList<>()));
-                    return response;
+                    MemberDetailDTO dto = convertToDetailDTO(m);
+                    dto.setChildren(childrenMap.getOrDefault(m.getId(), new ArrayList<>()));
+                    return dto;
                 })
                 .toList();
     }
 
     @Override
-    public MemberResponse getMemberById(Long familyId, Long memberId) {
+    public MemberDetailDTO getMemberById(Long familyId, Long memberId) {
         Family family = familyMapper.selectById(familyId);
         if (family == null) {
             throw new BusinessException("家谱不存在");
@@ -106,12 +110,12 @@ public class MemberServiceImpl implements MemberService {
             throw new BusinessException("成员不存在");
         }
 
-        return convertToResponse(member);
+        return convertToDetailDTO(member);
     }
 
     @Override
     @Transactional
-    public MemberResponse addMember(Long familyId, AddMemberRequest request, Long userId) {
+    public MemberDetailDTO addMember(Long familyId, MemberCreateDTO request, Long userId) {
         Family family = familyMapper.selectById(familyId);
         if (family == null) {
             throw new BusinessException("家谱不存在");
@@ -144,18 +148,18 @@ public class MemberServiceImpl implements MemberService {
                     .familyId(familyId)
                     .fromMemberId(request.getParentId())
                     .toMemberId(member.getId())
-                    .relationType(request.getGender() == Gender.male ? 
-                            RelationType.father_son : RelationType.mother_son)
+                    .relationType(request.getGender() == GenderEnum.MALE ?
+                            RelationTypeEnum.FATHER_SON : RelationTypeEnum.MOTHER_SON)
                     .build();
             relationMapper.insert(relation);
         }
 
-        return convertToResponse(member);
+        return convertToDetailDTO(member);
     }
 
     @Override
     @Transactional
-    public void applyEditMember(Long familyId, Long memberId, EditMemberRequest request, Long userId) {
+    public void applyEditMember(Long familyId, Long memberId, MemberEditDTO request, Long userId) {
         Family family = familyMapper.selectById(familyId);
         if (family == null) {
             throw new BusinessException("家谱不存在");
@@ -176,7 +180,7 @@ public class MemberServiceImpl implements MemberService {
         String oldValue = switch (request.getFieldName()) {
             case "name" -> member.getName();
             case "avatar" -> member.getAvatar();
-            case "birthDate" -> member.getBirthDate() != null ? 
+            case "birthDate" -> member.getBirthDate() != null ?
                     member.getBirthDate().toString() : null;
             case "bio" -> member.getBio();
             default -> null;
@@ -189,7 +193,7 @@ public class MemberServiceImpl implements MemberService {
                 .fieldName(request.getFieldName())
                 .oldValue(oldValue)
                 .newValue(request.getNewValue())
-                .status(RequestStatus.pending)
+                .status(RequestStatusEnum.PENDING)
                 .build();
         editRequestMapper.insert(editRequest);
     }
@@ -220,7 +224,7 @@ public class MemberServiceImpl implements MemberService {
                 .collect(Collectors.toMap(TreeNodeVO::getId, v -> v));
 
         Map<Long, Long> spouseMap = relations.stream()
-                .filter(r -> r.getRelationType() == RelationType.husband_wife)
+                .filter(r -> r.getRelationType() == RelationTypeEnum.HUSBAND_WIFE)
                 .collect(Collectors.toMap(
                         MemberRelation::getFromMemberId,
                         MemberRelation::getToMemberId,
@@ -232,23 +236,23 @@ public class MemberServiceImpl implements MemberService {
             TreeNodeVO toNode = memberMap.get(r.getToMemberId());
             if (fromNode == null || toNode == null) continue;
 
-            if (r.getRelationType() == RelationType.husband_wife) {
+            if (r.getRelationType() == RelationTypeEnum.HUSBAND_WIFE) {
                 if (fromNode.getSpouse() == null) {
                     fromNode.setSpouse(toNode);
                 }
                 if (toNode.getSpouse() == null) {
                     toNode.setSpouse(fromNode);
                 }
-            } else if (r.getRelationType() == RelationType.father_son || 
-                       r.getRelationType() == RelationType.mother_son) {
+            } else if (r.getRelationType() == RelationTypeEnum.FATHER_SON ||
+                       r.getRelationType() == RelationTypeEnum.MOTHER_SON) {
                 fromNode.getChildren().add(toNode);
             }
         }
 
         List<TreeNodeVO> rootNodes = members.stream()
                 .filter(m -> !relations.stream()
-                        .filter(r -> r.getRelationType() == RelationType.father_son || 
-                                     r.getRelationType() == RelationType.mother_son)
+                        .filter(r -> r.getRelationType() == RelationTypeEnum.FATHER_SON ||
+                                     r.getRelationType() == RelationTypeEnum.MOTHER_SON)
                         .map(MemberRelation::getToMemberId)
                         .collect(Collectors.toSet())
                         .contains(m.getId()))
@@ -265,7 +269,7 @@ public class MemberServiceImpl implements MemberService {
     }
 
     @Override
-    public MemberResponse updateMember(Long familyId, Long memberId, AddMemberRequest request, Long userId) {
+    public MemberDetailDTO updateMember(Long familyId, Long memberId, MemberCreateDTO request, Long userId) {
         Family family = familyMapper.selectById(familyId);
         if (family == null) {
             throw new BusinessException("家谱不存在");
@@ -297,7 +301,7 @@ public class MemberServiceImpl implements MemberService {
         }
 
         memberMapper.updateById(member);
-        return convertToResponse(member);
+        return convertToDetailDTO(member);
     }
 
     @Override
@@ -320,51 +324,48 @@ public class MemberServiceImpl implements MemberService {
             throw new BusinessException("不能删除创建者");
         }
 
-        // 删除关联关系
         LambdaQueryWrapper<MemberRelation> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(MemberRelation::getFamilyId, familyId)
                 .and(w -> w.eq(MemberRelation::getFromMemberId, memberId).or().eq(MemberRelation::getToMemberId, memberId));
         relationMapper.delete(wrapper);
 
-        // 删除成员
         memberMapper.deleteById(memberId);
     }
 
     @Override
-    public List<MemberResponse> getAllMembers() {
+    public List<MemberDetailDTO> getAllMembers() {
         List<FamilyMember> members = memberMapper.selectList(null);
-        
-        // 获取所有家谱信息
+
         List<Family> families = familyMapper.selectList(null);
         Map<Long, String> familyMap = families.stream()
                 .collect(Collectors.toMap(Family::getId, Family::getName));
-        
+
         return members.stream()
                 .map(m -> {
-                    MemberResponse response = convertToResponse(m);
-                    response.setFamilyName(familyMap.get(m.getFamilyId()));
-                    return response;
+                    MemberDetailDTO dto = convertToDetailDTO(m);
+                    dto.setFamilyName(familyMap.get(m.getFamilyId()));
+                    return dto;
                 })
                 .toList();
     }
 
     @Override
-    public PageResult<MemberResponse> getMembersPaged(Integer page, Integer size) {
+    public PageResult<MemberDetailDTO> getMembersPaged(Integer page, Integer size) {
         Page<FamilyMember> pageParam = new Page<>(page, size);
         IPage<FamilyMember> memberPage = memberMapper.selectPage(pageParam, null);
-        
+
         List<Family> families = familyMapper.selectList(null);
         Map<Long, String> familyMap = families.stream()
                 .collect(Collectors.toMap(Family::getId, Family::getName));
-        
-        List<MemberResponse> records = memberPage.getRecords().stream()
+
+        List<MemberDetailDTO> records = memberPage.getRecords().stream()
                 .map(m -> {
-                    MemberResponse response = convertToResponse(m);
-                    response.setFamilyName(familyMap.get(m.getFamilyId()));
-                    return response;
+                    MemberDetailDTO dto = convertToDetailDTO(m);
+                    dto.setFamilyName(familyMap.get(m.getFamilyId()));
+                    return dto;
                 })
                 .toList();
-        
+
         return PageResult.of(records, memberPage.getTotal(), page, size);
     }
 
@@ -381,23 +382,23 @@ public class MemberServiceImpl implements MemberService {
                 .build();
     }
 
-    private MemberResponse convertToResponse(FamilyMember member) {
-        MemberResponse response = new MemberResponse();
-        response.setId(member.getId());
-        response.setFamilyId(member.getFamilyId());
-        response.setUserId(member.getUserId());
-        response.setName(member.getName());
-        response.setGender(member.getGender());
-        response.setAvatar(member.getAvatar());
-        response.setBirthDate(member.getBirthDate());
-        response.setBio(member.getBio());
-        response.setIsCreator(member.getIsCreator());
-        response.setCreateTime(member.getCreateTime());
-        return response;
+    private MemberDetailDTO convertToDetailDTO(FamilyMember member) {
+        MemberDetailDTO dto = new MemberDetailDTO();
+        dto.setId(member.getId());
+        dto.setFamilyId(member.getFamilyId());
+        dto.setUserId(member.getUserId());
+        dto.setName(member.getName());
+        dto.setGender(member.getGender());
+        dto.setAvatar(member.getAvatar());
+        dto.setBirthDate(member.getBirthDate());
+        dto.setBio(member.getBio());
+        dto.setIsCreator(member.getIsCreator());
+        dto.setCreateTime(member.getCreateTime());
+        return dto;
     }
 
     @Override
-    public MemberResponse addMemberByUser(Long familyId, Long userId, AddMemberByUserRequest request) {
+    public MemberDetailDTO addMemberByUser(Long familyId, Long userId, MemberCreateByAdminDTO request) {
         Family family = familyMapper.selectById(familyId);
         if (family == null) {
             throw new BusinessException("家谱不存在");
@@ -408,7 +409,6 @@ public class MemberServiceImpl implements MemberService {
             throw new BusinessException("用户不存在");
         }
 
-        // 检查用户是否已是该家谱成员
         LambdaQueryWrapper<FamilyMember> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(FamilyMember::getFamilyId, familyId)
                 .eq(FamilyMember::getUserId, userId);
@@ -421,7 +421,7 @@ public class MemberServiceImpl implements MemberService {
                 .familyId(familyId)
                 .userId(userId)
                 .name(request.getName() != null ? request.getName() : user.getNickname())
-                .gender(request.getGender() != null ? request.getGender() : Gender.male)
+                .gender(request.getGender() != null ? request.getGender() : GenderEnum.MALE)
                 .avatar(request.getAvatar() != null ? request.getAvatar() : user.getAvatar())
                 .birthDate(request.getBirthDate())
                 .bio(request.getBio())
@@ -429,6 +429,6 @@ public class MemberServiceImpl implements MemberService {
                 .build();
         memberMapper.insert(member);
 
-        return convertToResponse(member);
+        return convertToDetailDTO(member);
     }
 }

@@ -2,6 +2,11 @@ package com.kin.family.util.code;
 
 import java.util.Random;
 
+/**
+ * 家谱码工具类
+ *
+ * @author candong
+ */
 public class FamilyCodeUtil {
     private static final Random RANDOM = new Random();
 

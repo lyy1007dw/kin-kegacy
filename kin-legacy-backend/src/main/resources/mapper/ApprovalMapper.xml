@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.kin.family.mapper.ApprovalMapper">
 
-    <select id="getApprovalsByFamilyId" resultType="com.kin.family.dto.ApprovalResponse">
+    <select id="getApprovalsByFamilyId" resultType="com.kin.family.dto.ApprovalDetailDTO">
         SELECT * FROM (
             SELECT
                 id,
@@ -58,7 +58,7 @@
         ORDER BY create_time DESC
     </select>
 
-    <select id="getAllApprovals" resultType="com.kin.family.dto.ApprovalResponse">
+    <select id="getAllApprovals" resultType="com.kin.family.dto.ApprovalDetailDTO">
         SELECT * FROM (
             SELECT
                 id,

@@ -1,15 +1,19 @@
 package com.kin.family.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
-import com.kin.family.enums.RequestStatus;
+import com.kin.family.constant.RequestStatusEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.apache.ibatis.type.EnumTypeHandler;
 
 import java.time.LocalDateTime;
 
+/**
+ * 加入申请实体
+ *
+ * @author candong
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -28,8 +32,7 @@ public class JoinRequest {
 
     private String relationDesc;
 
-    @TableField(value = "status", typeHandler = EnumTypeHandler.class)
-    private RequestStatus status;
+    private RequestStatusEnum status;
 
     private Long reviewerId;
 

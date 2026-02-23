@@ -8,6 +8,11 @@ import com.kin.family.util.context.UserContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 认证控制器
+ *
+ * @author candong
+ */
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -16,24 +21,23 @@ public class AuthController {
     private final UserService userService;
 
     @PostMapping("/wx-login")
-    public Result<LoginResponse> wxLogin(@RequestBody WxLoginRequest request) {
+    public Result<AuthTokenDTO> wxLogin(@RequestBody AuthWxLoginDTO request) {
         return Result.success(userService.wxLogin(request));
     }
 
     @PostMapping("/login")
-    @RequireRole("admin")
-    public Result<LoginResponse> login(@RequestBody LoginRequest request) {
+    public Result<AuthTokenDTO> login(@RequestBody AuthLoginDTO request) {
         return Result.success(userService.login(request.getUsername(), request.getPassword()));
     }
 
     @PostMapping("/refresh")
-    public Result<LoginResponse> refresh(@RequestBody RefreshTokenRequest request) {
+    public Result<AuthTokenDTO> refresh(@RequestBody AuthRefreshTokenDTO request) {
         return Result.success(userService.refreshToken(request.getRefreshToken()));
     }
 
     @GetMapping("/me")
     @RequireLogin
-    public Result<UserInfoResponse> getCurrentUser() {
+    public Result<UserDetailDTO> getCurrentUser() {
         return Result.success(userService.getCurrentUser());
     }
 

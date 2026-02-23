@@ -10,6 +10,11 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 管理员用户控制器
+ *
+ * @author candong
+ */
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
@@ -27,21 +32,21 @@ public class AdminUserController {
     @GetMapping("/user/list")
     @RequireLogin
     @RequireRole("admin")
-    public Result<List<UserInfoResponse>> getAllUsers() {
+    public Result<List<UserDetailDTO>> getAllUsers() {
         return Result.success(userService.getAllUsers());
     }
 
     @GetMapping("/user/list/non-admin")
     @RequireLogin
     @RequireRole("admin")
-    public Result<List<UserInfoResponse>> getNonAdminUsers() {
+    public Result<List<UserDetailDTO>> getNonAdminUsers() {
         return Result.success(userService.getNonAdminUsers());
     }
 
     @GetMapping("/user/list/paged")
     @RequireLogin
     @RequireRole("admin")
-    public Result<PageResult<UserInfoResponse>> getUsersPaged(
+    public Result<PageResult<UserDetailDTO>> getUsersPaged(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
         return Result.success(userService.getUsersPaged(page, size));
@@ -50,7 +55,7 @@ public class AdminUserController {
     @PutMapping("/user/{id}")
     @RequireLogin
     @RequireRole("admin")
-    public Result<UserInfoResponse> updateUser(@PathVariable Long id, @RequestBody UserInfoResponse request) {
+    public Result<UserDetailDTO> updateUser(@PathVariable Long id, @RequestBody UserDetailDTO request) {
         return Result.success(userService.updateUser(id, request));
     }
 

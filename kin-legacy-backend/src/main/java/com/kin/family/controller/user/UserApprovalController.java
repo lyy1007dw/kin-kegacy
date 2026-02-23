@@ -7,6 +7,11 @@ import com.kin.family.util.context.UserContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 用户审批控制器
+ *
+ * @author candong
+ */
 @RestController
 @RequestMapping("/api/approvals")
 @RequiredArgsConstructor
@@ -16,7 +21,7 @@ public class UserApprovalController {
 
     @GetMapping
     @RequireLogin
-    public Result<PageResult<ApprovalResponse>> getApprovals(
+    public Result<PageResult<ApprovalDetailDTO>> getApprovals(
             @RequestParam(required = false) Long familyId,
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String status,
@@ -34,7 +39,7 @@ public class UserApprovalController {
     public Result<Void> handleApproval(
             @PathVariable Long requestId,
             @RequestParam Long familyId,
-            @RequestBody HandleApprovalRequest request) {
+            @RequestBody ApprovalHandleDTO request) {
         Long userId = UserContext.getUserId();
         approvalService.handleApproval(familyId, requestId, request, userId);
         return Result.success();

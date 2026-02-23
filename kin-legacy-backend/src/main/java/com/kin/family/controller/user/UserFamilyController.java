@@ -9,6 +9,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 用户家谱控制器
+ *
+ * @author candong
+ */
 @RestController
 @RequestMapping("/api/family")
 @RequiredArgsConstructor
@@ -18,43 +23,43 @@ public class UserFamilyController {
 
     @PostMapping("/create")
     @RequireLogin
-    public Result<FamilyDetailResponse> createFamily(@RequestBody CreateFamilyRequest request) {
+    public Result<FamilyDetailDTO> createFamily(@RequestBody FamilyCreateDTO request) {
         Long userId = UserContext.getUserId();
         return Result.success(familyService.createFamily(request, userId));
     }
 
     @PostMapping("/join")
     @RequireLogin
-    public Result<Void> joinFamily(@RequestBody JoinFamilyRequest request) {
+    public Result<Void> joinFamily(@RequestBody FamilyJoinDTO request) {
         Long userId = UserContext.getUserId();
         familyService.joinFamily(request, userId);
         return Result.success();
     }
 
     @GetMapping("/{id}")
-    public Result<FamilyDetailResponse> getFamilyById(@PathVariable Long id) {
+    public Result<FamilyDetailDTO> getFamilyById(@PathVariable Long id) {
         return Result.success(familyService.getFamilyById(id));
     }
 
     @GetMapping("/mine")
     @RequireLogin
-    public Result<List<FamilyDetailResponse>> getMyFamilies() {
+    public Result<List<FamilyDetailDTO>> getMyFamilies() {
         Long userId = UserContext.getUserId();
         return Result.success(familyService.getMyFamilies(userId));
     }
 
     @GetMapping("/code/{code}")
-    public Result<FamilyDetailResponse> getFamilyByCode(@PathVariable String code) {
+    public Result<FamilyDetailDTO> getFamilyByCode(@PathVariable String code) {
         return Result.success(familyService.getFamilyByCode(code));
     }
 
     @GetMapping("/list")
-    public Result<List<FamilyDetailResponse>> getAllFamilies() {
+    public Result<List<FamilyDetailDTO>> getAllFamilies() {
         return Result.success(familyService.getAllFamilies());
     }
 
     @GetMapping("/list/paged")
-    public Result<PageResult<FamilyDetailResponse>> getFamiliesPaged(
+    public Result<PageResult<FamilyDetailDTO>> getFamiliesPaged(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
         return Result.success(familyService.getFamiliesPaged(page, size));
@@ -62,7 +67,7 @@ public class UserFamilyController {
 
     @PutMapping("/{id}")
     @RequireLogin
-    public Result<FamilyDetailResponse> updateFamily(@PathVariable Long id, @RequestBody CreateFamilyRequest request) {
+    public Result<FamilyDetailDTO> updateFamily(@PathVariable Long id, @RequestBody FamilyCreateDTO request) {
         Long userId = UserContext.getUserId();
         return Result.success(familyService.updateFamily(id, request, userId));
     }

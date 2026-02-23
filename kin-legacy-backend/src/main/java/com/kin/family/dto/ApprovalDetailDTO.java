@@ -1,12 +1,17 @@
 package com.kin.family.dto;
 
-import com.kin.family.enums.RequestStatus;
+import com.kin.family.constant.RequestStatusEnum;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * 审批详情DTO
+ *
+ * @author candong
+ */
 @Data
-public class ApprovalResponse {
+public class ApprovalDetailDTO {
     private Long id;
     private String type;
     private Long familyId;
@@ -17,6 +22,6 @@ public class ApprovalResponse {
     private String fieldName;
     private String oldValue;
     private String newValue;
-    private RequestStatus status;
+    private RequestStatusEnum status;
     private LocalDateTime createTime;
 }

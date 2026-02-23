@@ -2,6 +2,11 @@ package com.kin.family.exception;
 
 import lombok.Getter;
 
+/**
+ * 业务异常
+ *
+ * @author candong
+ */
 @Getter
 public class BusinessException extends RuntimeException {
     private final Integer code;

@@ -4,8 +4,13 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * 家谱详情DTO
+ *
+ * @author candong
+ */
 @Data
-public class FamilyDetailResponse {
+public class FamilyDetailDTO {
     private Long id;
     private String name;
     private String code;

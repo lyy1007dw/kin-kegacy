@@ -8,6 +8,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 全局异常处理器
+ *
+ * @author candong
+ */
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {

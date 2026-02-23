@@ -1,16 +1,20 @@
 package com.kin.family.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
-import com.kin.family.enums.UserRole;
-import com.kin.family.enums.UserStatus;
+import com.kin.family.constant.UserRoleEnum;
+import com.kin.family.constant.UserStatusEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.apache.ibatis.type.EnumTypeHandler;
 
 import java.time.LocalDateTime;
 
+/**
+ * 用户实体
+ *
+ * @author candong
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -33,11 +37,9 @@ public class User {
 
     private String phone;
 
-    @TableField(value = "role", typeHandler = EnumTypeHandler.class)
-    private UserRole role;
+    private UserRoleEnum role;
 
-    @TableField(value = "status", typeHandler = EnumTypeHandler.class)
-    private UserStatus status;
+    private UserStatusEnum status;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

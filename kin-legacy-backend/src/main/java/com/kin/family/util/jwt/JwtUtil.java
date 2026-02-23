@@ -14,6 +14,11 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * JWT工具类
+ *
+ * @author candong
+ */
 @Component
 @RequiredArgsConstructor
 public class JwtUtil {
