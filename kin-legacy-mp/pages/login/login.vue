@@ -117,6 +117,10 @@ export default {
       try {
         uni.showLoading({ title: '保存中...' })
         await api.user.updateName(this.nameForm.name.trim())
+        
+        const userInfo = await api.user.getCurrent()
+        this.$store.commit('SET_USER_INFO', userInfo)
+        
         uni.hideLoading()
         
         this.showNameModal = false

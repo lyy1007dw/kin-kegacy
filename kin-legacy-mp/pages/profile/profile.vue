@@ -81,8 +81,9 @@ export default {
       }
       try {
         await api.user.updateName(name.trim())
+        const userInfo = await api.user.getCurrent()
+        this.$store.commit('SET_USER_INFO', userInfo)
         uni.showToast({ title: '姓名修改成功', icon: 'success' })
-        this.getUserInfo()
       } catch (e) {
         uni.showToast({ title: e.message || '修改失败', icon: 'none' })
       }

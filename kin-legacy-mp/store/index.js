@@ -77,7 +77,7 @@ const store = createStore({
 
     async getUserInfo({ commit }) {
       try {
-        const res = await api.auth.getCurrentUser()
+        const res = await api.user.getCurrent()
         commit('SET_USER_INFO', res)
         return res
       } catch (error) {
