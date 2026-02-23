@@ -84,7 +84,7 @@
         
         <view class="jpu-modal-body">
           <view class="jpu-form-group">
-            <text class="jpu-form-label">家族堂号/谱名</text>
+            <text class="jpu-form-label">家谱名称</text>
             <input 
               class="jpu-form-input" 
               placeholder="例如：赵氏宗谱" 
@@ -94,27 +94,13 @@
           </view>
           
           <view class="jpu-form-group">
-            <text class="jpu-form-label">始祖尊讳</text>
-            <input 
-              class="jpu-form-input" 
-              placeholder="输入第一世祖先姓名" 
+            <text class="jpu-form-label">家谱简介（选填）</text>
+            <textarea 
+              class="jpu-form-textarea" 
+              placeholder="记录家谱的起源、迁徙历程等" 
               v-model="createForm.description"
               placeholder-class="jpu-placeholder"
             />
-          </view>
-
-          <view class="jpu-form-group">
-            <text class="jpu-form-label">始祖性别</text>
-            <view class="jpu-radio-group">
-              <label class="jpu-radio-item">
-                <radio class="jpu-radio" value="male" checked />
-                <text class="jpu-radio-text">男</text>
-              </label>
-              <label class="jpu-radio-item">
-                <radio class="jpu-radio" value="female" />
-                <text class="jpu-radio-text">女</text>
-              </label>
-            </view>
           </view>
         </view>
         
@@ -540,6 +526,19 @@ export default {
   border: 2rpx solid var(--theme-border);
   border-radius: 8rpx;
   padding: 0 24rpx;
+  font-size: 28rpx;
+  color: var(--theme-text);
+  box-sizing: border-box;
+  font-family: 'Noto Serif SC', 'Songti SC', 'SimSun', STSong, serif;
+}
+
+.jpu-form-textarea {
+  width: 100%;
+  min-height: 160rpx;
+  background-color: var(--theme-bg);
+  border: 2rpx solid var(--theme-border);
+  border-radius: 8rpx;
+  padding: 24rpx;
   font-size: 28rpx;
   color: var(--theme-text);
   box-sizing: border-box;

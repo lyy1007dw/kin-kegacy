@@ -292,6 +292,7 @@ public class UserServiceImpl implements UserService {
         dto.setAvatar(user.getAvatar());
         dto.setPhone(user.getPhone());
         dto.setName(user.getName());
+        dto.setNameRequired(user.getName() == null || user.getName().isEmpty());
         dto.setGlobalRole(user.getGlobalRole());
         dto.setStatus(user.getStatus());
         dto.setCreateTime(user.getCreateTime());

@@ -68,12 +68,16 @@ public class FamilyServiceImpl implements FamilyService {
         User user = userMapper.selectById(userId);
         boolean isAdmin = user != null && user.getGlobalRole().isAdmin();
 
+        String creatorName = user != null && user.getName() != null && !user.getName().isEmpty() 
+                ? user.getName() 
+                : (user != null ? user.getNickname() : "创建者");
+
         FamilyMember creatorMember = null;
         if (!isAdmin) {
             creatorMember = FamilyMember.builder()
                     .familyId(family.getId())
                     .userId(userId)
-                    .name(user != null ? user.getNickname() : "创建者")
+                    .name(creatorName)
                     .gender(GenderEnum.MALE)
                     .avatar(user != null ? user.getAvatar() : null)
                     .isCreator(1)
