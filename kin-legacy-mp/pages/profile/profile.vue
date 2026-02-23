@@ -72,6 +72,12 @@ export default {
 
 <style scoped>
 .jpu-page-container {
+  --theme-bg: #F2ECE4;
+  --theme-card: #FBF9F6;
+  --theme-text: #3E2A23;
+  --theme-primary: #8E292C;
+  --theme-border: #D4C9BD;
+  
   min-height: 100vh;
   background-color: var(--theme-bg);
   padding: 32rpx;

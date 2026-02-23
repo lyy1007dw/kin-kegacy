@@ -111,6 +111,12 @@ export default {
 
 <style scoped>
 .jpu-tree-node-wrapper {
+  --theme-bg: #F2ECE4;
+  --theme-card: #FBF9F6;
+  --theme-text: #3E2A23;
+  --theme-primary: #8E292C;
+  --theme-border: #D4C9BD;
+  
   position: relative;
 }
 

@@ -24,13 +24,15 @@ export default {
 @import './common/styles/common.css';
 
 /* 全局CSS变量 - 传统风格 */
-page {
+page, view, text {
   --theme-bg: #F2ECE4;
   --theme-card: #FBF9F6;
   --theme-text: #3E2A23;
   --theme-primary: #8E292C;
   --theme-border: #D4C9BD;
-  
+}
+
+page {  
   background-color: var(--theme-bg);
   font-family: 'Noto Serif SC', 'Songti SC', 'SimSun', STSong, serif;
   font-size: 28rpx;

@@ -2,6 +2,7 @@
   <view class="jpu-login-container">
     <view class="jpu-login-header">
       <view class="jpu-logo-wrap">
+        <text class="jpu-logo-text">慎重</text>
         <text class="jpu-logo-text">追远</text>
       </view>
       <text class="jpu-slogan">慎终追远 · 民德归厚</text>
@@ -66,6 +67,12 @@ export default {
 
 <style scoped>
 .jpu-login-container {
+  --theme-bg: #F2ECE4;
+  --theme-card: #FBF9F6;
+  --theme-text: #3E2A23;
+  --theme-primary: #8E292C;
+  --theme-border: #D4C9BD;
+  
   min-height: 100vh;
   background-color: var(--theme-bg);
   padding: 160rpx 48rpx 48rpx;
@@ -86,17 +93,20 @@ export default {
   background-color: var(--theme-primary);
   border-radius: 20rpx;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 4rpx;
   box-shadow: 0 12rpx 40rpx rgba(142, 41, 44, 0.3);
 }
 
 .jpu-logo-text {
-  font-size: 64rpx;
+  font-size: 44rpx;
   font-weight: bold;
   color: #FFFFFF;
   font-family: 'Noto Serif SC', 'Songti SC', 'SimSun', STSong, serif;
   text-align: center;
+  line-height: 1;
 }
 
 .jpu-slogan {
