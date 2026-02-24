@@ -6,14 +6,18 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * 需要指定角色注解
+ * 操作日志注解
  *
  * @author candong
  */
-@Target({ElementType.METHOD, ElementType.TYPE})
+@Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface RequireRole {
-    String[] value() default {};
+public @interface OperationLogger {
+    String module();
 
-    Logical logical() default Logical.OR;
+    String operation();
+
+    boolean saveParams() default true;
+
+    boolean saveResult() default false;
 }

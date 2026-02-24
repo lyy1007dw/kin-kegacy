@@ -2,6 +2,7 @@ package com.kin.family.controller.admin;
 
 import com.kin.family.annotation.RequireLogin;
 import com.kin.family.annotation.RequireRole;
+import com.kin.family.annotation.OperationLogger;
 import com.kin.family.dto.*;
 import com.kin.family.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class AdminUserController {
     @GetMapping("/statistics")
     @RequireLogin
     @RequireRole("SUPER_ADMIN")
+    @OperationLogger(module = "首页", operation = "查询统计数据")
     public Result<Map<String, Object>> getStatistics() {
         return Result.success(userService.getStatistics());
     }
@@ -32,6 +34,7 @@ public class AdminUserController {
     @GetMapping("/user/list")
     @RequireLogin
     @RequireRole("SUPER_ADMIN")
+    @OperationLogger(module = "用户管理", operation = "查询所有用户")
     public Result<List<UserDetailDTO>> getAllUsers() {
         return Result.success(userService.getAllUsers());
     }
@@ -39,6 +42,7 @@ public class AdminUserController {
     @GetMapping("/user/list/non-admin")
     @RequireLogin
     @RequireRole("SUPER_ADMIN")
+    @OperationLogger(module = "用户管理", operation = "查询非管理员用户")
     public Result<List<UserDetailDTO>> getNonAdminUsers() {
         return Result.success(userService.getNonAdminUsers());
     }
@@ -46,6 +50,7 @@ public class AdminUserController {
     @GetMapping("/user/list/paged")
     @RequireLogin
     @RequireRole("SUPER_ADMIN")
+    @OperationLogger(module = "用户管理", operation = "分页查询用户")
     public Result<PageResult<UserDetailDTO>> getUsersPaged(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
@@ -55,6 +60,7 @@ public class AdminUserController {
     @PutMapping("/user/{id}")
     @RequireLogin
     @RequireRole("SUPER_ADMIN")
+    @OperationLogger(module = "用户管理", operation = "更新用户")
     public Result<UserDetailDTO> updateUser(@PathVariable Long id, @RequestBody UserDetailDTO request) {
         return Result.success(userService.updateUser(id, request));
     }
@@ -62,6 +68,7 @@ public class AdminUserController {
     @PutMapping("/user/{id}/disable")
     @RequireLogin
     @RequireRole("SUPER_ADMIN")
+    @OperationLogger(module = "用户管理", operation = "禁用用户")
     public Result<Void> disableUser(@PathVariable Long id) {
         userService.disableUser(id);
         return Result.success();
@@ -70,6 +77,7 @@ public class AdminUserController {
     @PutMapping("/user/{id}/enable")
     @RequireLogin
     @RequireRole("SUPER_ADMIN")
+    @OperationLogger(module = "用户管理", operation = "启用用户")
     public Result<Void> enableUser(@PathVariable Long id) {
         userService.enableUser(id);
         return Result.success();

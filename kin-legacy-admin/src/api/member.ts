@@ -1,4 +1,5 @@
 import request from '@/utils/request'
+import { useUserStore } from '@/stores/user'
 
 export interface Member {
   id: number
@@ -32,7 +33,14 @@ export interface PageResult<T> {
 }
 
 export const getMemberList = (page = 1, size = 10) => {
-  return request.get<PageResult<Member>>('/admin/member/list/paged', { params: { page, size } })
+  const userStore = useUserStore()
+  const role = userStore.userInfo?.globalRole
+  
+  if (role === 'SUPER_ADMIN') {
+    return request.get<PageResult<Member>>('/admin/member/list/paged', { params: { page, size } })
+  } else {
+    return Promise.resolve({ data: { records: [], total: 0, page: 1, size: 10 } })
+  }
 }
 
 export const getFamilyMembers = (familyId: number) => {
@@ -48,5 +56,11 @@ export const deleteMember = (familyId: number, memberId: number) => {
 }
 
 export const addMember = (data: AddMemberParams) => {
-  return request.post('/admin/member', data)
+  return request.post('/family/' + data.familyId + '/member', {
+    name: data.name,
+    gender: data.gender,
+    avatar: data.avatar,
+    birthDate: data.birthDate,
+    bio: data.bio
+  })
 }

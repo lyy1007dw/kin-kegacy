@@ -7,6 +7,7 @@ import {
 } from 'naive-ui'
 import type { DataTableColumns } from 'naive-ui'
 import { getFamilyList, createFamily, updateFamily, deleteFamily } from '@/api/family'
+import { formatValue, formatDate } from '@/utils/format'
 
 export interface Family {
   id: number
@@ -52,18 +53,21 @@ const columns: DataTableColumns<Family> = [
     title: 'ID',
     key: 'id',
     width: 80,
-    align: 'center'
+    align: 'center',
+    render: (row) => formatValue(row.id)
   },
   {
     title: '家谱名称',
     key: 'name',
-    minWidth: 150
+    minWidth: 150,
+    render: (row) => formatValue(row.name)
   },
   {
     title: '家谱码',
     key: 'code',
     width: 160,
     render: (row) => {
+      if (!row.code) return formatValue(row.code)
       return h('div', { 
         class: 'code-cell',
         onClick: () => copyCode(row.code)
@@ -74,12 +78,14 @@ const columns: DataTableColumns<Family> = [
     title: '成员数',
     key: 'memberCount',
     width: 100,
-    align: 'center'
+    align: 'center',
+    render: (row) => formatValue(row.memberCount)
   },
   {
     title: '创建时间',
     key: 'createTime',
-    width: 180
+    width: 180,
+    render: (row) => formatDate(row.createTime)
   },
   {
     title: '操作',

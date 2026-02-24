@@ -27,7 +27,8 @@ const handleLogin = async () => {
     await formRef.value?.validate()
     await userStore.login(formValue.value.username, formValue.value.password)
     
-    if (userStore.userInfo?.globalRole !== 'SUPER_ADMIN') {
+    const userRole = userStore.userInfo?.globalRole
+    if (userRole !== 'SUPER_ADMIN' && userRole !== 'GENEALOGY_ADMIN') {
       message.error('您没有权限访问管理系统')
       await userStore.logout()
       return

@@ -12,13 +12,24 @@ const userStore = useUserStore()
 const collapsed = ref(false)
 const isDark = ref(false)
 
-const menuOptions = [
+const roleMenuMap: Record<string, string[]> = {
+  SUPER_ADMIN: ['/dashboard', '/family', '/member', '/approval', '/user'],
+  GENEALOGY_ADMIN: ['/dashboard', '/family', '/member', '/approval']
+}
+
+const menuConfig = [
   { label: '首页概览', key: '/dashboard' },
   { label: '家谱管理', key: '/family' },
   { label: '成员管理', key: '/member' },
   { label: '审批管理', key: '/approval' },
   { label: '用户管理', key: '/user' }
 ]
+
+const menuOptions = computed(() => {
+  const userRole = userStore.userInfo?.globalRole
+  const allowedRoutes = roleMenuMap[userRole || ''] || []
+  return menuConfig.filter(item => allowedRoutes.includes(item.key))
+})
 
 const activeKey = computed(() => route.path)
 
@@ -45,11 +56,20 @@ const toggleTheme = () => {
 
 const fetchUserInfo = async () => {
   try {
-    const res = await request.get('/user/me')
+    const res = await request.get('/auth/me')
     userStore.userInfo = res.data
   } catch (e) {
     console.error('获取用户信息失败', e)
   }
+}
+
+const getRoleText = (role: string) => {
+  const roleMap: Record<string, string> = {
+    SUPER_ADMIN: '超级管理员',
+    GENEALOGY_ADMIN: '家谱管理员',
+    NORMAL_USER: '普通用户'
+  }
+  return roleMap[role] || '用户'
 }
 
 onMounted(() => {
@@ -122,7 +142,7 @@ onMounted(() => {
               </NAvatar>
               <div class="user-detail">
                 <span class="username">{{ userStore.userInfo?.nickname || '管理员' }}</span>
-                <span class="user-role">系统管理员</span>
+                <span class="user-role">{{ getRoleText(userStore.userInfo?.globalRole || '') }}</span>
               </div>
             </div>
           </NDropdown>

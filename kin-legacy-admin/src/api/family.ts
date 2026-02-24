@@ -1,4 +1,5 @@
 import request from '@/utils/request'
+import { useUserStore } from '@/stores/user'
 import type { Family, FamilyDetail } from '@/types/family'
 
 export interface PageResult<T> {
@@ -9,7 +10,14 @@ export interface PageResult<T> {
 }
 
 export const getFamilyList = (page = 1, size = 10) => {
-  return request.get<PageResult<Family>>('/admin/family/list/paged', { params: { page, size } })
+  const userStore = useUserStore()
+  const role = userStore.userInfo?.globalRole
+  
+  if (role === 'SUPER_ADMIN') {
+    return request.get<PageResult<Family>>('/admin/family/list/paged', { params: { page, size } })
+  } else {
+    return request.get<PageResult<Family>>('/family/list/paged', { params: { page, size } })
+  }
 }
 
 export const getMyFamilyList = () => {

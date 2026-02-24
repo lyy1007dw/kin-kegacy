@@ -1,4 +1,5 @@
 import request from '@/utils/request'
+import { useUserStore } from '@/stores/user'
 import type { Family } from './family'
 
 export interface User {
@@ -46,7 +47,14 @@ export interface Approval {
 }
 
 export const getApprovalList = (params: { page?: number; size?: number; type?: string; status?: string }) => {
-  return request.get<PageResult<Approval>>('/admin/approvals', { params })
+  const userStore = useUserStore()
+  const role = userStore.userInfo?.globalRole
+  
+  if (role === 'SUPER_ADMIN') {
+    return request.get<PageResult<Approval>>('/admin/approvals', { params })
+  } else {
+    return Promise.resolve({ data: { records: [], total: 0, page: 1, size: 10 } })
+  }
 }
 
 export const handleApproval = (familyId: number, requestId: number, data: { approved: boolean }) => {

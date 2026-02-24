@@ -2,6 +2,7 @@ package com.kin.family.controller.admin;
 
 import com.kin.family.annotation.RequireLogin;
 import com.kin.family.annotation.RequireRole;
+import com.kin.family.annotation.OperationLogger;
 import com.kin.family.dto.*;
 import com.kin.family.service.ApprovalService;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,8 @@ public class AdminApprovalController {
 
     @GetMapping("/approvals")
     @RequireLogin
+    @RequireRole("SUPER_ADMIN")
+    @OperationLogger(module = "审批管理", operation = "查询所有审批")
     public Result<PageResult<ApprovalDetailDTO>> getAllApprovals(
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String status,
@@ -32,6 +35,7 @@ public class AdminApprovalController {
     @PostMapping("/approval/{familyId}/{requestId}/handle")
     @RequireLogin
     @RequireRole("SUPER_ADMIN")
+    @OperationLogger(module = "审批管理", operation = "管理员处理审批")
     public Result<Void> handleApproval(
             @PathVariable Long familyId,
             @PathVariable Long requestId,

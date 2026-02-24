@@ -6,6 +6,7 @@ import {
 } from 'naive-ui'
 import type { DataTableColumns } from 'naive-ui'
 import { getApprovalList, handleApproval } from '@/api/admin'
+import { formatValue, formatDate } from '@/utils/format'
 
 export interface ApprovalItem {
   id: number
@@ -64,9 +65,9 @@ const getStatusText = (status: string) => {
 }
 
 const joinColumns: DataTableColumns<ApprovalItem> = [
-  { title: '申请人', key: 'applicantName', width: 120 },
-  { title: '申请加入', key: 'relationDesc', minWidth: 150 },
-  { title: '申请时间', key: 'createTime', width: 180 },
+  { title: '申请人', key: 'applicantName', width: 120, render: (row) => formatValue(row.applicantName) },
+  { title: '申请加入', key: 'relationDesc', minWidth: 150, render: (row) => formatValue(row.relationDesc) },
+  { title: '申请时间', key: 'createTime', width: 180, render: (row) => formatDate(row.createTime) },
   { 
     title: '状态', 
     key: 'status',
@@ -99,7 +100,7 @@ const joinColumns: DataTableColumns<ApprovalItem> = [
 ]
 
 const editColumns: DataTableColumns<ApprovalItem> = [
-  { title: '申请人', key: 'applicantName', width: 120 },
+  { title: '申请人', key: 'applicantName', width: 120, render: (row) => formatValue(row.applicantName) },
   { 
     title: '修改字段', 
     key: 'fieldName',
@@ -111,7 +112,7 @@ const editColumns: DataTableColumns<ApprovalItem> = [
         bio: '简介',
         birthDate: '出生日期'
       }
-      return fieldMap[row.fieldName || ''] || row.fieldName
+      return fieldMap[row.fieldName || ''] || formatValue(row.fieldName)
     }
   },
   { 
@@ -119,12 +120,12 @@ const editColumns: DataTableColumns<ApprovalItem> = [
     key: 'content',
     minWidth: 200,
     render: (row) => h('div', { class: 'edit-content' }, [
-      h('span', { class: 'old-value' }, row.oldValue || '(无)'),
+      h('span', { class: 'old-value' }, formatValue(row.oldValue, '(无)')),
       h('span', { class: 'arrow' }, ' → '),
-      h('span', { class: 'new-value' }, row.newValue || '(无)')
+      h('span', { class: 'new-value' }, formatValue(row.newValue, '(无)'))
     ])
   },
-  { title: '申请时间', key: 'createTime', width: 180 },
+  { title: '申请时间', key: 'createTime', width: 180, render: (row) => formatDate(row.createTime) },
   { 
     title: '状态', 
     key: 'status',

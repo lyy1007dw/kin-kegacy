@@ -1,6 +1,10 @@
 package com.kin.family.controller.user;
 
+import com.kin.family.annotation.RequireAdmin;
 import com.kin.family.annotation.RequireLogin;
+import com.kin.family.annotation.RequireRole;
+import com.kin.family.annotation.OperationLogger;
+import com.kin.family.constant.UserRoleEnum;
 import com.kin.family.dto.*;
 import com.kin.family.service.ApprovalService;
 import com.kin.family.util.UserContextUtil;
@@ -34,8 +38,22 @@ public class UserApprovalController {
         }
     }
 
+    @GetMapping("/family/{familyId}")
+    @RequireLogin
+    @RequireAdmin
+    public Result<PageResult<ApprovalDetailDTO>> getFamilyApprovals(
+            @PathVariable Long familyId,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        return Result.success(approvalService.getApprovals(familyId, type, status, page, size));
+    }
+
     @PostMapping("/{requestId}/handle")
     @RequireLogin
+    @RequireAdmin
+    @OperationLogger(module = "审批管理", operation = "处理审批")
     public Result<Void> handleApproval(
             @PathVariable Long requestId,
             @RequestParam Long familyId,

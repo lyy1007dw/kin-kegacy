@@ -6,6 +6,7 @@ import {
 } from 'naive-ui'
 import type { DataTableColumns } from 'naive-ui'
 import { getUserList, updateUser, updateUserName, disableUser, enableUser } from '@/api/user'
+import { formatValue, formatDate } from '@/utils/format'
 
 export interface User {
   id: number
@@ -41,9 +42,9 @@ const pagination = ref({
 const isAdmin = (row: User) => row.globalRole === 'SUPER_ADMIN'
 
 const columns: DataTableColumns<User> = [
-  { title: 'ID', key: 'id', width: 80, align: 'center' },
-  { title: '昵称', key: 'nickname', minWidth: 120 },
-  { title: '手机号', key: 'phone', minWidth: 130 },
+  { title: 'ID', key: 'id', width: 80, align: 'center', render: (row) => formatValue(row.id) },
+  { title: '昵称', key: 'nickname', minWidth: 120, render: (row) => formatValue(row.nickname) },
+  { title: '手机号', key: 'phone', minWidth: 130, render: (row) => formatValue(row.phone) },
   { 
     title: '角色', 
     key: 'globalRole',
@@ -70,7 +71,7 @@ const columns: DataTableColumns<User> = [
     align: 'center',
     render: (row) => h(NTag, { type: row.status === 'disabled' ? 'error' : 'success', size: 'small' }, { default: () => row.status === 'disabled' ? '已禁用' : '正常' })
   },
-  { title: '创建时间', key: 'createTime', width: 180 },
+  { title: '创建时间', key: 'createTime', width: 180, render: (row) => formatDate(row.createTime) },
   {
     title: '操作',
     key: 'actions',

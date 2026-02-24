@@ -7,6 +7,7 @@ import {
 import type { DataTableColumns } from 'naive-ui'
 import { getMemberList, updateMember, deleteMember, addMember } from '@/api/member'
 import { getFamilyList, getNonAdminUsers, type User } from '@/api/admin'
+import { formatValue, formatDate } from '@/utils/format'
 
 export interface Member {
   id: number
@@ -62,13 +63,13 @@ const genderOptions = [
 ]
 
 const columns: DataTableColumns<Member> = [
-  { title: 'ID', key: 'id', width: 80, align: 'center' },
-  { title: '姓名', key: 'name', width: 120 },
-  { title: '性别', key: 'gender', width: 80, align: 'center', render: (row) => row.gender === 'male' ? '男' : '女' },
-  { title: '出生日期', key: 'birthDate', width: 120 },
-  { title: '所属家谱', key: 'familyName', width: 150 },
-  { title: '简介', key: 'bio', ellipsis: { tooltip: true } },
-  { title: '创建时间', key: 'createTime', width: 180 },
+  { title: 'ID', key: 'id', width: 80, align: 'center', render: (row) => formatValue(row.id) },
+  { title: '姓名', key: 'name', width: 120, render: (row) => formatValue(row.name) },
+  { title: '性别', key: 'gender', width: 80, align: 'center', render: (row) => row.gender === 'male' ? '男' : (row.gender === 'female' ? '女' : '-') },
+  { title: '出生日期', key: 'birthDate', width: 120, render: (row) => formatValue(row.birthDate) },
+  { title: '所属家谱', key: 'familyName', width: 150, render: (row) => formatValue(row.familyName) },
+  { title: '简介', key: 'bio', ellipsis: { tooltip: true }, render: (row) => formatValue(row.bio) },
+  { title: '创建时间', key: 'createTime', width: 180, render: (row) => formatDate(row.createTime) },
   {
     title: '操作',
     key: 'actions',

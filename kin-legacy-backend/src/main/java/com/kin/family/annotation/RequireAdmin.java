@@ -6,14 +6,12 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * 需要指定角色注解
+ * 需要家谱管理员权限注解
  *
  * @author candong
  */
-@Target({ElementType.METHOD, ElementType.TYPE})
+@Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface RequireRole {
-    String[] value() default {};
-
-    Logical logical() default Logical.OR;
+public @interface RequireAdmin {
+    String familyIdParam() default "familyId";
 }

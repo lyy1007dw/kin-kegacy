@@ -2,6 +2,7 @@ package com.kin.family.controller.admin;
 
 import com.kin.family.annotation.RequireLogin;
 import com.kin.family.annotation.RequireRole;
+import com.kin.family.annotation.OperationLogger;
 import com.kin.family.dto.*;
 import com.kin.family.service.FamilyService;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class AdminFamilyController {
     @GetMapping("/family/list")
     @RequireLogin
     @RequireRole("SUPER_ADMIN")
+    @OperationLogger(module = "家谱管理", operation = "查询所有家谱")
     public Result<List<FamilyDetailDTO>> getAllFamilies() {
         return Result.success(familyService.getAllFamilies());
     }
@@ -31,6 +33,7 @@ public class AdminFamilyController {
     @GetMapping("/family/list/paged")
     @RequireLogin
     @RequireRole("SUPER_ADMIN")
+    @OperationLogger(module = "家谱管理", operation = "分页查询家谱")
     public Result<PageResult<FamilyDetailDTO>> getFamiliesPaged(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {

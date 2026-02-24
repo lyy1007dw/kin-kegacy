@@ -24,31 +24,31 @@ const routes: RouteRecordRaw[] = [
         path: '/family',
         name: 'Family',
         component: () => import('@/views/Family.vue'),
-        meta: { title: '家谱管理', icon: 'People' }
+        meta: { title: '家谱管理', icon: 'People', roles: ['SUPER_ADMIN', 'GENEALOGY_ADMIN'] }
       },
       {
         path: '/family/:id',
         name: 'FamilyDetail',
         component: () => import('@/views/FamilyDetail.vue'),
-        meta: { title: '家谱详情', hidden: true }
+        meta: { title: '家谱详情', hidden: true, roles: ['SUPER_ADMIN', 'GENEALOGY_ADMIN'] }
       },
       {
         path: '/member',
         name: 'Member',
         component: () => import('@/views/Member.vue'),
-        meta: { title: '成员管理', icon: 'Person' }
+        meta: { title: '成员管理', icon: 'Person', roles: ['SUPER_ADMIN', 'GENEALOGY_ADMIN'] }
       },
       {
         path: '/approval',
         name: 'Approval',
         component: () => import('@/views/Approval.vue'),
-        meta: { title: '审批管理', icon: 'Clipboard' }
+        meta: { title: '审批管理', icon: 'Clipboard', roles: ['SUPER_ADMIN', 'GENEALOGY_ADMIN'] }
       },
       {
         path: '/user',
         name: 'User',
         component: () => import('@/views/User.vue'),
-        meta: { title: '用户管理', icon: 'Settings' }
+        meta: { title: '用户管理', icon: 'Settings', roles: ['SUPER_ADMIN'] }
       }
     ]
   }
@@ -59,7 +59,7 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore()
   
   document.title = `${to.meta.title || '家谱传承'} - 家谱管理系统`
@@ -80,14 +80,30 @@ router.beforeEach((to, from, next) => {
   }
 
   if (to.path !== '/login' && to.path !== '/') {
-    if (!userStore.userInfo || userStore.userInfo.globalRole !== 'SUPER_ADMIN') {
-      next('/login')
-      userStore.logout()
-      return
+    if (!userStore.userInfo) {
+      try {
+        await request.get('/auth/me')
+      } catch (e) {
+        // 如果获取用户信息失败，可能是 token 过期，清除并跳转登录
+        userStore.logout()
+        next('/login')
+        return
+      }
+    }
+
+    const requiredRoles = to.meta.roles as string[] | undefined
+    if (requiredRoles && requiredRoles.length > 0) {
+      const userRole = userStore.userInfo?.globalRole
+      if (!userRole || !requiredRoles.includes(userRole)) {
+        next('/dashboard')
+        return
+      }
     }
   }
 
   next()
 })
+
+import request from '@/utils/request'
 
 export default router

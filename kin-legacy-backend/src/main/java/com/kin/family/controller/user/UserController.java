@@ -1,6 +1,7 @@
 package com.kin.family.controller.user;
 
 import com.kin.family.annotation.RequireLogin;
+import com.kin.family.annotation.OperationLogger;
 import com.kin.family.dto.*;
 import com.kin.family.service.UserService;
 import com.kin.family.util.UserContextUtil;
@@ -28,12 +29,14 @@ public class UserController {
 
     @PutMapping("/user/{id}")
     @RequireLogin
+    @OperationLogger(module = "用户管理", operation = "更新用户信息")
     public Result<UserDetailDTO> updateUser(@PathVariable Long id, @RequestBody UserDetailDTO request) {
         return Result.success(userService.updateUser(id, request));
     }
 
     @PutMapping("/user/name")
     @RequireLogin
+    @OperationLogger(module = "用户管理", operation = "更新姓名")
     public Result<Void> updateUserName(@Valid @RequestBody UserNameUpdateDTO request) {
         Long userId = UserContextUtil.getUserId();
         userService.updateUserName(userId, request.getName());

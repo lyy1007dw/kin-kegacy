@@ -1,6 +1,8 @@
 package com.kin.family.controller.user;
 
+import com.kin.family.annotation.RequireAdmin;
 import com.kin.family.annotation.RequireLogin;
+import com.kin.family.annotation.OperationLogger;
 import com.kin.family.dto.*;
 import com.kin.family.service.MemberService;
 import com.kin.family.util.UserContextUtil;
@@ -24,18 +26,21 @@ public class UserMemberController {
 
     @GetMapping("/members")
     @RequireLogin
+    @OperationLogger(module = "成员管理", operation = "查询成员列表")
     public Result<List<MemberDetailDTO>> getMembers(@PathVariable Long familyId) {
         return Result.success(memberService.getMembers(familyId));
     }
 
     @GetMapping("/tree")
     @RequireLogin
+    @OperationLogger(module = "成员管理", operation = "查看家谱树")
     public Result<List<TreeNodeVO>> getFamilyTree(@PathVariable Long familyId) {
         return Result.success(memberService.getFamilyTree(familyId));
     }
 
     @GetMapping("/member/{id}")
     @RequireLogin
+    @OperationLogger(module = "成员管理", operation = "查看成员详情")
     public Result<MemberDetailDTO> getMemberById(
             @PathVariable Long familyId,
             @PathVariable Long id) {
@@ -44,6 +49,8 @@ public class UserMemberController {
 
     @PostMapping("/member")
     @RequireLogin
+    @RequireAdmin
+    @OperationLogger(module = "成员管理", operation = "添加成员")
     public Result<MemberDetailDTO> addMember(
             @PathVariable Long familyId,
             @RequestBody MemberCreateDTO request) {
@@ -53,6 +60,8 @@ public class UserMemberController {
 
     @PostMapping("/member/{id}/edit-request")
     @RequireLogin
+    @RequireAdmin
+    @OperationLogger(module = "成员管理", operation = "申请编辑成员")
     public Result<Void> applyEditMember(
             @PathVariable Long familyId,
             @PathVariable Long id,
@@ -64,6 +73,8 @@ public class UserMemberController {
 
     @PutMapping("/member/{id}")
     @RequireLogin
+    @RequireAdmin
+    @OperationLogger(module = "成员管理", operation = "更新成员")
     public Result<MemberDetailDTO> updateMember(
             @PathVariable Long familyId,
             @PathVariable Long id,
@@ -74,6 +85,8 @@ public class UserMemberController {
 
     @DeleteMapping("/member/{id}")
     @RequireLogin
+    @RequireAdmin
+    @OperationLogger(module = "成员管理", operation = "删除成员")
     public Result<Void> deleteMember(
             @PathVariable Long familyId,
             @PathVariable Long id) {
