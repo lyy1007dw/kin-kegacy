@@ -259,10 +259,19 @@ export default {
         uni.showLoading({ title: '提交中...' })
         
         if (this.formType === 'edit-member') {
-          await api.member.applyEdit(this.currentFamily.id, this.selectedMember.id, {
-            fieldName: 'name',
-            oldValue: this.selectedMember.name,
-            newValue: this.editForm.name
+          const changes = {
+            name: { oldValue: this.selectedMember.name, newValue: this.editForm.name }
+          }
+          await api.member.applyEdit(this.currentFamily.id, this.selectedMember.id, { changes })
+        } else if (this.formType === 'add-child') {
+          await api.member.addChild(this.currentFamily.id, this.selectedMember.id, {
+            name: this.editForm.name,
+            gender: this.editForm.gender
+          })
+        } else if (this.formType === 'add-parent') {
+          await api.member.addParent(this.currentFamily.id, this.selectedMember.id, {
+            name: this.editForm.name,
+            gender: this.editForm.gender
           })
         }
         
@@ -273,6 +282,12 @@ export default {
       } catch (error) {
         uni.hideLoading()
       }
+    },
+
+    showMemberDetail(member) {
+      uni.navigateTo({
+        url: `/pages/member-detail/member-detail?id=${member.id}`
+      })
     }
   }
 }

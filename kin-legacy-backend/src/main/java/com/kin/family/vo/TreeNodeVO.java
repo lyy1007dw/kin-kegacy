@@ -27,6 +27,9 @@ public class TreeNodeVO {
     private LocalDate birthDate;
     private String bio;
     private Integer isCreator;
+    private Long userId;
+    private Boolean currentUser;
+    private String currentUserLabel;
 
     private TreeNodeVO spouse;
 

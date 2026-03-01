@@ -45,11 +45,13 @@ public class ApprovalConverter {
         dto.setFamilyId(editRequest.getFamilyId());
         dto.setApplicantUserId(editRequest.getApplicantUserId());
         dto.setMemberId(editRequest.getMemberId());
-        dto.setFieldName(editRequest.getFieldName());
-        dto.setOldValue(editRequest.getOldValue());
-        dto.setNewValue(editRequest.getNewValue());
+        dto.setMemberName(editRequest.getMemberName());
+        dto.setChangesJson(editRequest.getChangesJson());
         dto.setStatus(editRequest.getStatus());
+        dto.setRejectReason(editRequest.getRejectReason());
+        dto.setReviewerId(editRequest.getReviewerId());
         dto.setCreateTime(editRequest.getCreateTime());
+        dto.setReviewedAt(editRequest.getReviewedAt());
         return dto;
     }
 }

@@ -23,8 +23,8 @@
           <text class="jpu-member-generation">第 {{ node.generation || 1 }} 世</text>
         </view>
         
-        <view v-if="isCurrentUser" class="jpu-me-tag">
-          <text class="jpu-me-text">我</text>
+        <view v-if="node.currentUser" class="jpu-me-tag">
+          <text class="jpu-me-text">{{ node.currentUserLabel || '我' }}</text>
         </view>
       </view>
     </view>
@@ -91,7 +91,7 @@ export default {
     cardClass() {
       var classes = []
       if (this.node.isCreator) classes.push('jpu-card-creator')
-      if (this.isCurrentUser) classes.push('jpu-card-me')
+      if (this.node.currentUser) classes.push('jpu-card-me')
       return classes.join(' ')
     }
   },

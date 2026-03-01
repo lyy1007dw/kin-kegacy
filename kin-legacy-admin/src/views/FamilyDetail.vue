@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { NCard, NButton, NSpace, NTag, NDescriptions, NDescriptionsItem, NEmpty, useMessage } from 'naive-ui'
+import { NCard, NButton, NSpace, NTag, NDescriptions, NDescriptionsItem, NEmpty, useMessage, NModal, NImage } from 'naive-ui'
 import { getFamilyById } from '@/api/family'
-import { getFamilyMembers } from '@/api/member'
+import { getFamilyMembers, getMemberDetail } from '@/api/member'
 
 const route = useRoute()
 const router = useRouter()
@@ -12,6 +12,10 @@ const message = useMessage()
 const familyId = Number(route.params.id)
 const familyInfo = ref<any>(null)
 const members = ref<any[]>([])
+
+const showDetailModal = ref(false)
+const memberDetail = ref<any>(null)
+const memberLoading = ref(false)
 
 const copyCode = async (code: string) => {
   try {
@@ -33,6 +37,23 @@ const fetchData = async () => {
   } catch (error) {
     message.error('获取家谱详情失败')
   }
+}
+
+const viewMemberDetail = async (member: any) => {
+  showDetailModal.value = true
+  memberLoading.value = true
+  try {
+    const res = await getMemberDetail(familyId, member.id)
+    memberDetail.value = res.data
+  } catch (error) {
+    message.error('获取成员详情失败')
+  } finally {
+    memberLoading.value = false
+  }
+}
+
+const getGenderText = (gender: string) => {
+  return gender === 'male' ? '男' : (gender === 'female' ? '女' : '未知')
 }
 
 onMounted(() => {
@@ -65,7 +86,7 @@ onMounted(() => {
         <span class="card-title">成员列表</span>
       </template>
       <div v-if="members.length > 0" class="member-grid">
-        <div v-for="member in members" :key="member.id" class="member-card">
+        <div v-for="member in members" :key="member.id" class="member-card" @click="viewMemberDetail(member)">
           <div class="member-avatar">{{ member.name?.charAt(0) || '?' }}</div>
           <div class="member-name">{{ member.name }}</div>
           <NTag v-if="member.isCreator === 1" type="success" size="small">创建者</NTag>
@@ -73,6 +94,38 @@ onMounted(() => {
       </div>
       <NEmpty v-else description="暂无成员" />
     </NCard>
+
+    <NModal v-model:show="showDetailModal" preset="card" title="成员详情" style="width: 600px">
+      <div v-if="memberDetail">
+        <NDescriptions label-placement="left" :column="2" label-style="font-weight: 500;">
+          <NDescriptionsItem label="姓名">{{ memberDetail.name }}</NDescriptionsItem>
+          <NDescriptionsItem label="性别">{{ getGenderText(memberDetail.gender) }}</NDescriptionsItem>
+          <NDescriptionsItem label="年龄">{{ memberDetail.age || '-' }}</NDescriptionsItem>
+          <NDescriptionsItem label="出生日期">{{ memberDetail.birthDate || '-' }}</NDescriptionsItem>
+          <NDescriptionsItem label="出生地">{{ memberDetail.birthPlace || '-' }}</NDescriptionsItem>
+          <NDescriptionsItem label="去世日期">{{ memberDetail.deathDate || '-' }}</NDescriptionsItem>
+          <NDescriptionsItem label="角色" v-if="memberDetail.isCreator === 1">
+            <NTag type="success">创建者</NTag>
+          </NDescriptionsItem>
+          <NDescriptionsItem label="简介" :span="2">{{ memberDetail.bio || '暂无' }}</NDescriptionsItem>
+          <NDescriptionsItem label="照片相册" :span="2">
+            <div class="photos-placeholder">{{ memberDetail.photos || '该功能待开发' }}</div>
+          </NDescriptionsItem>
+        </NDescriptions>
+        
+        <div v-if="memberDetail.relations && memberDetail.relations.length > 0" style="margin-top: 20px;">
+          <div class="relations-title">家庭关系</div>
+          <div class="relations-list">
+            <NTag v-for="rel in memberDetail.relations" :key="rel.memberId" style="margin-right: 8px; margin-bottom: 8px;">
+              {{ rel.relationLabel }}: {{ rel.memberName }}
+            </NTag>
+          </div>
+        </div>
+      </div>
+      <div v-else-if="memberLoading" style="text-align: center; padding: 40px;">
+        加载中...
+      </div>
+    </NModal>
   </div>
 </template>
 
@@ -114,6 +167,7 @@ onMounted(() => {
   border: 1px solid var(--border-color);
   border-radius: 12px;
   transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .member-card:hover {
@@ -140,5 +194,24 @@ onMounted(() => {
   margin-bottom: 8px;
   font-weight: 500;
   color: var(--text-primary);
+}
+
+.photos-placeholder {
+  padding: 20px;
+  text-align: center;
+  background: #f5f5f5;
+  border-radius: 8px;
+  color: #999;
+}
+
+.relations-title {
+  font-weight: 500;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+}
+
+.relations-list {
+  display: flex;
+  flex-wrap: wrap;
 }
 </style>

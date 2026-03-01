@@ -19,9 +19,11 @@ public class ApprovalDetailDTO {
     private String applicantName;
     private String relationDesc;
     private Long memberId;
-    private String fieldName;
-    private String oldValue;
-    private String newValue;
+    private String memberName;
+    private String changesJson;
     private RequestStatusEnum status;
+    private String rejectReason;
+    private Long reviewerId;
     private LocalDateTime createTime;
+    private LocalDateTime reviewedAt;
 }

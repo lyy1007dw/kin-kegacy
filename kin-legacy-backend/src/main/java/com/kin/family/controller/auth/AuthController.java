@@ -1,6 +1,7 @@
 package com.kin.family.controller.auth;
 
 import com.kin.family.annotation.RequireLogin;
+import com.kin.family.annotation.RateLimit;
 import com.kin.family.annotation.OperationLogger;
 import com.kin.family.dto.*;
 import com.kin.family.service.UserService;
@@ -51,6 +52,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @RateLimit(value = 5, duration = 60)
     @OperationLogger(module = "认证", operation = "账号密码登录")
     public Result<AuthTokenDTO> login(@RequestBody AuthLoginDTO request, HttpServletRequest httpRequest) {
         try {

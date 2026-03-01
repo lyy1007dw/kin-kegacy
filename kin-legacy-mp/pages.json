@@ -28,6 +28,15 @@
       }
     },
     {
+      "path": "pages/member-detail/member-detail",
+      "style": {
+        "navigationBarTitleText": "成员详情",
+        "navigationBarBackgroundColor": "#FBF9F6",
+        "navigationBarTextStyle": "black",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
       "path": "pages/approval/approval",
       "style": {
         "navigationBarTitleText": "奏报核准",

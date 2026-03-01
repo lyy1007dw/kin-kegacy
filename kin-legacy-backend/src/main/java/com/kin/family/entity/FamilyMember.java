@@ -37,6 +37,10 @@ public class FamilyMember {
 
     private LocalDate birthDate;
 
+    private String birthPlace;
+
+    private LocalDate deathDate;
+
     private String bio;
 
     @TableField("is_creator")

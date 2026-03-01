@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kin.family.mapper.FamilyMemberMapper">
+
+    <select id="selectMemberPage" resultType="com.kin.family.dto.MemberVO">
+        SELECT
+            fm.id,
+            fm.name,
+            fm.gender,
+            fm.birth_date as birthDate,
+            fm.birth_place as birthPlace,
+            fm.death_date as deathDate,
+            fm.bio,
+            fm.avatar,
+            fm.family_id as genealogyId,
+            f.name as genealogyName,
+            fm.user_id as userId,
+            ug.role as accountRole,
+            fm.create_time as createdAt
+        FROM family_member fm
+        LEFT JOIN family f ON fm.family_id = f.id
+        LEFT JOIN user_genealogy ug ON fm.user_id = ug.user_id AND fm.family_id = ug.genealogy_id
+        <where>
+            <if test="query.name != null and query.name != ''">
+                AND fm.name LIKE CONCAT('%', #{query.name}, '%')
+            </if>
+            <if test="query.gender != null and query.gender != ''">
+                AND fm.gender = #{query.gender}
+            </if>
+            <if test="query.birthDateStart != null and query.birthDateStart != ''">
+                AND fm.birth_date &gt;= #{query.birthDateStart}
+            </if>
+            <if test="query.birthDateEnd != null and query.birthDateEnd != ''">
+                AND fm.birth_date &lt;= #{query.birthDateEnd}
+            </if>
+            <if test="query.genealogyId != null">
+                AND fm.family_id = #{query.genealogyId}
+            </if>
+            <if test="query.createTimeStart != null and query.createTimeStart != ''">
+                AND fm.create_time &gt;= #{query.createTimeStart}
+            </if>
+            <if test="query.createTimeEnd != null and query.createTimeEnd != ''">
+                AND fm.create_time &lt;= #{query.createTimeEnd}
+            </if>
+        </where>
+        ORDER BY fm.create_time DESC
+    </select>
+
+</mapper>

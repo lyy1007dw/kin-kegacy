@@ -12,11 +12,13 @@
                 applicant_name,
                 relation_desc,
                 NULL AS member_id,
-                NULL AS field_name,
-                NULL AS old_value,
-                NULL AS new_value,
+                NULL AS member_name,
+                NULL AS changes_json,
+                NULL AS reject_reason,
+                NULL AS reviewer_id,
                 status,
-                create_time
+                create_time,
+                NULL AS reviewed_at
             FROM join_request
             WHERE family_id = #{familyId}
             <if test="type == null or type == 'join'">
@@ -36,11 +38,13 @@
                 NULL AS applicant_name,
                 NULL AS relation_desc,
                 member_id,
-                field_name,
-                old_value,
-                new_value,
+                member_name,
+                changes_json,
+                reject_reason,
+                reviewer_id,
                 status,
-                create_time
+                create_time,
+                reviewed_at
             FROM edit_request
             WHERE family_id = #{familyId}
             <if test="type == null or type == 'edit'">
@@ -68,11 +72,13 @@
                 applicant_name,
                 relation_desc,
                 NULL AS member_id,
-                NULL AS field_name,
-                NULL AS old_value,
-                NULL AS new_value,
+                NULL AS member_name,
+                NULL AS changes_json,
+                NULL AS reject_reason,
+                NULL AS reviewer_id,
                 status,
-                create_time
+                create_time,
+                NULL AS reviewed_at
             FROM join_request
             <where>
                 <if test="type == null or type == 'join'">
@@ -93,11 +99,13 @@
                 NULL AS applicant_name,
                 NULL AS relation_desc,
                 member_id,
-                field_name,
-                old_value,
-                new_value,
+                member_name,
+                changes_json,
+                reject_reason,
+                reviewer_id,
                 status,
-                create_time
+                create_time,
+                reviewed_at
             FROM edit_request
             <where>
                 <if test="type == null or type == 'edit'">

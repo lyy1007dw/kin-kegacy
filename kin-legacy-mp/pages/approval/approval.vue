@@ -1,28 +1,59 @@
 <template>
   <view class="jpu-page-container">
-    <view v-if="pendingApprovals.length === 0" class="jpu-empty-state">
+    <!-- Tab切换 -->
+    <view class="jpu-tabs">
+      <view 
+        class="jpu-tab" 
+        :class="{ 'jpu-tab-active': activeTab === 'pending' }"
+        @click="switchTab('pending')"
+      >
+        <text>待审批</text>
+        <view v-if="pendingCount > 0" class="jpu-badge">{{ pendingCount }}</view>
+      </view>
+      <view 
+        class="jpu-tab" 
+        :class="{ 'jpu-tab-active': activeTab === 'approved' }"
+        @click="switchTab('approved')"
+      >
+        <text>已通过</text>
+      </view>
+      <view 
+        class="jpu-tab" 
+        :class="{ 'jpu-tab-active': activeTab === 'rejected' }"
+        @click="switchTab('rejected')"
+      >
+        <text>已拒绝</text>
+      </view>
+    </view>
+
+    <view v-if="!currentFamily" class="jpu-empty-state">
+      <view class="jpu-empty-icon-wrap">
+        <text class="jpu-empty-icon-text">谱</text>
+      </view>
+      <text class="jpu-empty-text">请先选择一个家谱</text>
+    </view>
+
+    <view v-else-if="loading" class="loading-wrap">
+      <text>加载中...</text>
+    </view>
+
+    <view v-else-if="approvals.length === 0" class="jpu-empty-state">
       <view class="jpu-empty-icon-wrap">
         <text class="jpu-empty-icon-text">审</text>
       </view>
-      <text class="jpu-empty-text">族内安宁，暂无奏报</text>
+      <text class="jpu-empty-text">{{ emptyText }}</text>
     </view>
 
     <view v-else class="jpu-approval-list">
-      <!-- 提示栏 -->
-      <view class="jpu-tip-warning">
-        <text class="jpu-tip-bold">编修提示：</text>
-        <text>族人提交的"信息修正"或"添丁"申请将在此处汇总，须由修谱人核准方可入谱。</text>
-      </view>
-
       <view 
         class="jpu-approval-card" 
-        v-for="approval in pendingApprovals" 
+        v-for="approval in approvals" 
         :key="approval.id"
         :class="{ 'jpu-card-leaving': leavingId === approval.id }"
       >
         <view class="jpu-approval-header">
           <view class="jpu-approval-left">
-            <text class="jpu-tag-danger">待核准</text>
+            <text :class="getStatusClass(approval.status)">{{ getStatusText(approval.status) }}</text>
             <text class="jpu-approval-family">{{ approval.familyName }}</text>
           </view>
           <text class="jpu-approval-applicant">{{ approval.applicantName }} 具禀</text>
@@ -32,13 +63,19 @@
           <view v-if="approval.type === 'join'">
             呈请为家族添丁入谱
           </view>
-          <view v-else>
-            呈请修正 <text class="jpu-text-bold">{{ approval.targetName }}</text> 之记录为：
-            <text class="jpu-text-highlight jpu-text-underline">{{ approval.newValue }}</text>
+          <view v-else-if="approval.type === 'edit'">
+            <view>申请修改成员信息</view>
+            <view class="edit-info" v-if="approval.memberName">
+              <text>成员: {{ approval.memberName }}</text>
+            </view>
+            <view class="edit-reason">
+              <text class="jpu-tip-bold">修改内容：</text>
+              <text>该功能待完善</text>
+            </view>
           </view>
         </view>
 
-        <view class="jpu-approval-actions">
+        <view class="jpu-approval-actions" v-if="approval.status === 'PENDING'">
           <view class="jpu-btn-gray" @click="handleApproval(approval.id, 'reject')">
             <text>驳回</text>
           </view>
@@ -58,58 +95,104 @@ import api from '../../utils/api'
 export default {
   data() {
     return {
-      pendingApprovals: [],
+      approvals: [],
+      loading: true,
+      activeTab: 'pending',
       leavingId: null
     }
   },
 
   computed: {
-    ...mapState(['currentFamily'])
+    ...mapState(['currentFamily', 'userInfo']),
+    pendingCount() {
+      return this.approvals.filter(a => a.status === 'PENDING').length
+    },
+    emptyText() {
+      switch(this.activeTab) {
+        case 'pending': return '暂无待审批事项'
+        case 'approved': return '暂无已通过记录'
+        case 'rejected': return '暂无已拒绝记录'
+        default: return '暂无记录'
+      }
+    }
   },
 
   onShow() {
-    this.loadApprovals()
+    if (this.currentFamily) {
+      this.loadApprovals()
+    }
   },
 
   onPullDownRefresh() {
-    var self = this
-    this.loadApprovals().then(function() {
+    this.loadApprovals().then(() => {
       uni.stopPullDownRefresh()
     })
   },
 
   methods: {
+    switchTab(tab) {
+      this.activeTab = tab
+      this.loadApprovals()
+    },
+
     loadApprovals() {
-      var self = this
-      return api.approval.getAll({ status: 'pending' }).then(function(res) {
-        self.pendingApprovals = res.records || res || []
-      }).catch(function(error) {
-        console.error('加载审批列表失败', error)
-      })
+      if (!this.currentFamily) {
+        this.loading = false
+        return Promise.resolve()
+      }
+      
+      this.loading = true
+      const status = this.activeTab === 'pending' ? 'PENDING' : 
+                     this.activeTab === 'approved' ? 'APPROVED' : 'REJECTED'
+      
+      return api.approval.getFamilyApprovals(this.currentFamily.id, { status })
+        .then(res => {
+          this.approvals = res.records || res || []
+        })
+        .catch(error => {
+          console.error('加载审批列表失败', error)
+          this.approvals = []
+        })
+        .finally(() => {
+          this.loading = false
+        })
+    },
+
+    getStatusClass(status) {
+      switch(status) {
+        case 'PENDING': return 'jpu-tag-danger'
+        case 'APPROVED': return 'jpu-tag-success'
+        case 'REJECTED': return 'jpu-tag-gray'
+        default: return ''
+      }
+    },
+
+    getStatusText(status) {
+      switch(status) {
+        case 'PENDING': return '待核准'
+        case 'APPROVED': return '已通过'
+        case 'REJECTED': return '已拒绝'
+        default: return status
+      }
     },
 
     handleApproval(id, action) {
-      var self = this
       this.leavingId = id
       
-      setTimeout(function() {
-        var familyId = self.currentFamily && self.currentFamily.id
-        api.approval.handle(familyId, id, { 
-          action: action === 'approve' ? 'approve' : 'reject' 
-        }).then(function() {
-          uni.showToast({ 
-            title: action === 'approve' ? '已准奏' : '已驳回', 
-            icon: 'success' 
-          })
-          
-          self.pendingApprovals = self.pendingApprovals.filter(function(a) { 
-            return a.id !== id 
-          })
-          self.leavingId = null
-        }).catch(function(error) {
-          self.leavingId = null
+      api.approval.handle(this.currentFamily.id, id, { 
+        action: action === 'approve' ? 'approve' : 'reject' 
+      }).then(() => {
+        uni.showToast({ 
+          title: action === 'approve' ? '已准奏' : '已驳回', 
+          icon: 'success' 
         })
-      }, 300)
+        
+        this.approvals = this.approvals.filter(a => a.id !== id)
+        this.leavingId = null
+      }).catch(error => {
+        this.leavingId = null
+        uni.showToast({ title: '操作失败', icon: 'none' })
+      })
     }
   }
 }
@@ -307,5 +390,89 @@ export default {
 
 .jpu-btn-primary:active {
   opacity: 0.9;
+}
+
+/* Tab切换 */
+.jpu-tabs {
+  display: flex;
+  background-color: var(--theme-card);
+  border-radius: 12rpx;
+  padding: 8rpx;
+  margin-bottom: 24rpx;
+}
+
+.jpu-tab {
+  flex: 1;
+  text-align: center;
+  padding: 20rpx;
+  font-size: 28rpx;
+  color: #8D6E63;
+  border-radius: 8rpx;
+  position: relative;
+}
+
+.jpu-tab-active {
+  background-color: var(--theme-primary);
+  color: #FFFFFF;
+  font-weight: bold;
+}
+
+.jpu-badge {
+  position: absolute;
+  top: 8rpx;
+  right: 20rpx;
+  background-color: #FF5722;
+  color: #FFFFFF;
+  font-size: 20rpx;
+  min-width: 32rpx;
+  height: 32rpx;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8rpx;
+}
+
+/* 加载中 */
+.loading-wrap {
+  text-align: center;
+  padding: 100rpx;
+  color: #8D6E63;
+}
+
+/* 状态标签 */
+.jpu-tag-success {
+  display: inline-block;
+  background-color: #E8F5E9;
+  border: 2rpx solid #A5D6A7;
+  color: #2E7D32;
+  font-size: 24rpx;
+  font-weight: bold;
+  padding: 6rpx 16rpx;
+  border-radius: 4rpx;
+}
+
+.jpu-tag-gray {
+  display: inline-block;
+  background-color: #F5F5F5;
+  border: 2rpx solid #E0E0E0;
+  color: #9E9E9E;
+  font-size: 24rpx;
+  font-weight: bold;
+  padding: 6rpx 16rpx;
+  border-radius: 4rpx;
+}
+
+/* 编辑信息 */
+.edit-info {
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  color: #666;
+}
+
+.edit-reason {
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  color: #666;
 }
 </style>

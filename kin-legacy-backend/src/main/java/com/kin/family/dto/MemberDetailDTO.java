@@ -22,8 +22,14 @@ public class MemberDetailDTO {
     private GenderEnum gender;
     private String avatar;
     private LocalDate birthDate;
+    private String birthPlace;
+    private LocalDate deathDate;
     private String bio;
     private Integer isCreator;
+    private Integer generation;
+    private Integer age;
+    private String photos;
+    private List<MemberRelationDTO> relations;
     private List<MemberDetailDTO> children;
     private LocalDateTime createTime;
 }

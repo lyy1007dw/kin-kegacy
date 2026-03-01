@@ -35,7 +35,8 @@ public class UserMemberController {
     @RequireLogin
     @OperationLogger(module = "成员管理", operation = "查看家谱树")
     public Result<List<TreeNodeVO>> getFamilyTree(@PathVariable Long familyId) {
-        return Result.success(memberService.getFamilyTree(familyId));
+        Long currentUserId = UserContextUtil.getUserId();
+        return Result.success(memberService.getFamilyTree(familyId, currentUserId));
     }
 
     @GetMapping("/member/{id}")
@@ -45,6 +46,15 @@ public class UserMemberController {
             @PathVariable Long familyId,
             @PathVariable Long id) {
         return Result.success(memberService.getMemberById(familyId, id));
+    }
+
+    @GetMapping("/member/{id}/detail")
+    @RequireLogin
+    @OperationLogger(module = "成员管理", operation = "查看成员详细信息")
+    public Result<MemberDetailDTO> getMemberDetail(
+            @PathVariable Long familyId,
+            @PathVariable Long id) {
+        return Result.success(memberService.getMemberDetail(familyId, id));
     }
 
     @PostMapping("/member")
@@ -58,9 +68,32 @@ public class UserMemberController {
         return Result.success(memberService.addMember(familyId, request, userId));
     }
 
-    @PostMapping("/member/{id}/edit-request")
+    @PostMapping("/member/{id}/add-child")
     @RequireLogin
     @RequireAdmin
+    @OperationLogger(module = "成员管理", operation = "录入子嗣")
+    public Result<MemberDetailDTO> addChildMember(
+            @PathVariable Long familyId,
+            @PathVariable Long id,
+            @RequestBody MemberCreateDTO request) {
+        Long userId = UserContextUtil.getUserId();
+        return Result.success(memberService.addChildMember(familyId, id, request, userId));
+    }
+
+    @PostMapping("/member/{id}/add-parent")
+    @RequireLogin
+    @RequireAdmin
+    @OperationLogger(module = "成员管理", operation = "追溯先祖")
+    public Result<MemberDetailDTO> addParentMember(
+            @PathVariable Long familyId,
+            @PathVariable Long id,
+            @RequestBody MemberCreateDTO request) {
+        Long userId = UserContextUtil.getUserId();
+        return Result.success(memberService.addParentMember(familyId, id, request, userId));
+    }
+
+    @PostMapping("/member/{id}/edit-request")
+    @RequireLogin
     @OperationLogger(module = "成员管理", operation = "申请编辑成员")
     public Result<Void> applyEditMember(
             @PathVariable Long familyId,

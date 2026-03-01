@@ -5,6 +5,7 @@ import com.kin.family.annotation.RequireRole;
 import com.kin.family.annotation.OperationLogger;
 import com.kin.family.dto.*;
 import com.kin.family.service.MemberService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,15 +41,43 @@ public class AdminMemberController {
         return Result.success(memberService.getMembersPaged(page, size));
     }
 
+    @GetMapping("/member")
+    @RequireLogin
+    @RequireRole("SUPER_ADMIN")
+    @OperationLogger(module = "成员管理", operation = "多条件分页查询成员")
+    public Result<PageResult<MemberVO>> queryMembers(MemberQueryRequest query) {
+        return Result.success(memberService.queryMembers(query));
+    }
+
     @PostMapping("/member")
     @RequireLogin
     @RequireRole("SUPER_ADMIN")
     @OperationLogger(module = "成员管理", operation = "管理员添加成员")
-    public Result<MemberDetailDTO> addMember(@RequestBody MemberCreateByAdminDTO request) {
+    public Result<MemberDetailDTO> addMember(@Valid @RequestBody MemberCreateByAdminDTO request) {
         return Result.success(memberService.addMemberByUser(
                 request.getFamilyId(),
                 request.getUserId(),
                 request
         ));
+    }
+
+    @PutMapping("/member/{id}")
+    @RequireLogin
+    @RequireRole("SUPER_ADMIN")
+    @OperationLogger(module = "成员管理", operation = "管理员编辑成员")
+    public Result<MemberDetailDTO> updateMember(
+            @PathVariable Long id,
+            @Valid @RequestBody MemberEditByAdminDTO request) {
+        return Result.success(memberService.updateMemberByAdmin(id, request));
+    }
+
+    @PostMapping("/member/check-transfer")
+    @RequireLogin
+    @RequireRole("SUPER_ADMIN")
+    @OperationLogger(module = "成员管理", operation = "检查成员跨家谱迁移")
+    public Result<MemberTransferCheckDTO> checkTransfer(
+            @RequestParam Long memberId,
+            @RequestParam Long targetGenealogyId) {
+        return Result.success(memberService.checkMemberTransfer(memberId, targetGenealogyId));
     }
 }
