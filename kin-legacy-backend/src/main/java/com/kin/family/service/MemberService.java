@@ -15,8 +15,8 @@ public interface MemberService {
     MemberDetailDTO getMemberById(Long familyId, Long memberId);
     MemberDetailDTO getMemberDetail(Long familyId, Long memberId);
     MemberDetailDTO addMember(Long familyId, MemberCreateDTO request, Long userId);
-    MemberDetailDTO addChildMember(Long familyId, Long parentId, MemberCreateDTO request, Long userId);
-    MemberDetailDTO addParentMember(Long familyId, Long childId, MemberCreateDTO request, Long userId);
+    void addChildMember(Long familyId, Long parentId, MemberCreateDTO request, Long userId);
+    void addParentMember(Long familyId, Long childId, MemberCreateDTO request, Long userId);
     void applyEditMember(Long familyId, Long memberId, MemberEditDTO request, Long userId);
     List<TreeNodeVO> getFamilyTree(Long familyId, Long currentUserId);
     MemberDetailDTO updateMember(Long familyId, Long memberId, MemberCreateDTO request, Long userId);

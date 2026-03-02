@@ -13,13 +13,16 @@ import com.kin.family.entity.Family;
 import com.kin.family.entity.FamilyMember;
 import com.kin.family.entity.JoinRequest;
 import com.kin.family.constant.GenderEnum;
+import com.kin.family.constant.RelationTypeEnum;
 import com.kin.family.constant.RequestStatusEnum;
+import com.kin.family.entity.MemberRelation;
 import com.kin.family.exception.BusinessException;
 import com.kin.family.mapper.ApprovalMapper;
 import com.kin.family.mapper.EditRequestMapper;
 import com.kin.family.mapper.FamilyMapper;
 import com.kin.family.mapper.FamilyMemberMapper;
 import com.kin.family.mapper.JoinRequestMapper;
+import com.kin.family.mapper.MemberRelationMapper;
 import com.kin.family.service.ApprovalService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -43,6 +46,7 @@ public class ApprovalServiceImpl implements ApprovalService {
     private final EditRequestMapper editRequestMapper;
     private final FamilyMapper familyMapper;
     private final FamilyMemberMapper memberMapper;
+    private final MemberRelationMapper relationMapper;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final ApprovalMapper approvalMapper;
 
@@ -130,26 +134,100 @@ public class ApprovalServiceImpl implements ApprovalService {
         
         editRequestMapper.updateById(editRequest);
 
-        if ("approve".equals(request.getAction())) {
-            FamilyMember member = memberMapper.selectById(editRequest.getMemberId());
-            if (member != null && editRequest.getChangesJson() != null) {
-                try {
-                    Map<String, MemberEditDTO.FieldChange> changes = objectMapper.readValue(
-                            editRequest.getChangesJson(),
-                            new TypeReference<Map<String, MemberEditDTO.FieldChange>>() {}
-                    );
-                    
-                    for (Map.Entry<String, MemberEditDTO.FieldChange> entry : changes.entrySet()) {
-                        String fieldName = entry.getKey();
-                        String newValue = entry.getValue().getNewValue();
-                        applyFieldChange(member, fieldName, newValue);
-                    }
-                    memberMapper.updateById(member);
-                } catch (JsonProcessingException e) {
-                    throw new BusinessException("解析修改内容失败");
+        if ("approve".equals(request.getAction()) && editRequest.getChangesJson() != null) {
+            try {
+                Map<String, Object> memberInfo = objectMapper.readValue(
+                        editRequest.getChangesJson(),
+                        new TypeReference<Map<String, Object>>() {}
+                );
+
+                if (memberInfo.containsKey("parentId")) {
+                    handleAddMemberRequest(editRequest, memberInfo);
+                } else if (memberInfo.containsKey("childId")) {
+                    handleAddParentRequest(editRequest, memberInfo);
+                } else {
+                    handleEditMemberRequest(editRequest, memberInfo);
                 }
+            } catch (JsonProcessingException e) {
+                throw new BusinessException("解析修改内容失败");
             }
         }
+    }
+
+    private void handleAddMemberRequest(EditRequest editRequest, Map<String, Object> memberInfo) {
+        Long parentId = memberInfo.get("parentId") instanceof Number ? 
+                ((Number) memberInfo.get("parentId")).longValue() : null;
+        
+        FamilyMember child = FamilyMember.builder()
+                .familyId(editRequest.getFamilyId())
+                .userId(memberInfo.get("userId") instanceof Number ? 
+                        ((Number) memberInfo.get("userId")).longValue() : null)
+                .name((String) memberInfo.get("name"))
+                .gender(GenderEnum.valueOf((String) memberInfo.get("gender")))
+                .avatar((String) memberInfo.get("avatar"))
+                .birthDate(memberInfo.get("birthDate") != null ? 
+                        LocalDate.parse((String) memberInfo.get("birthDate")) : null)
+                .birthPlace((String) memberInfo.get("birthPlace"))
+                .bio((String) memberInfo.get("bio"))
+                .isCreator(0)
+                .build();
+        memberMapper.insert(child);
+
+        RelationTypeEnum relationType = child.getGender() == GenderEnum.MALE ?
+                RelationTypeEnum.FATHER_SON : RelationTypeEnum.MOTHER_SON;
+        
+        MemberRelation relation = MemberRelation.builder()
+                .familyId(editRequest.getFamilyId())
+                .fromMemberId(parentId)
+                .toMemberId(child.getId())
+                .relationType(relationType)
+                .build();
+        relationMapper.insert(relation);
+    }
+
+    private void handleAddParentRequest(EditRequest editRequest, Map<String, Object> memberInfo) {
+        Long childId = memberInfo.get("childId") instanceof Number ? 
+                ((Number) memberInfo.get("childId")).longValue() : null;
+        
+        FamilyMember parent = FamilyMember.builder()
+                .familyId(editRequest.getFamilyId())
+                .userId(memberInfo.get("userId") instanceof Number ? 
+                        ((Number) memberInfo.get("userId")).longValue() : null)
+                .name((String) memberInfo.get("name"))
+                .gender(GenderEnum.valueOf((String) memberInfo.get("gender")))
+                .avatar((String) memberInfo.get("avatar"))
+                .birthDate(memberInfo.get("birthDate") != null ? 
+                        LocalDate.parse((String) memberInfo.get("birthDate")) : null)
+                .birthPlace((String) memberInfo.get("birthPlace"))
+                .bio((String) memberInfo.get("bio"))
+                .isCreator(0)
+                .build();
+        memberMapper.insert(parent);
+
+        RelationTypeEnum relationType = parent.getGender() == GenderEnum.MALE ?
+                RelationTypeEnum.FATHER_SON : RelationTypeEnum.MOTHER_SON;
+        
+        MemberRelation relation = MemberRelation.builder()
+                .familyId(editRequest.getFamilyId())
+                .fromMemberId(parent.getId())
+                .toMemberId(childId)
+                .relationType(relationType)
+                .build();
+        relationMapper.insert(relation);
+    }
+
+    private void handleEditMemberRequest(EditRequest editRequest, Map<String, Object> changes) {
+        FamilyMember member = memberMapper.selectById(editRequest.getMemberId());
+        if (member == null) return;
+
+        for (Map.Entry<String, Object> entry : changes.entrySet()) {
+            String fieldName = entry.getKey();
+            if (entry.getValue() instanceof Map) {
+                String newValue = (String) ((Map<?, ?>) entry.getValue()).get("newValue");
+                applyFieldChange(member, fieldName, newValue);
+            }
+        }
+        memberMapper.updateById(member);
     }
     
     private void applyFieldChange(FamilyMember member, String fieldName, String newValue) {

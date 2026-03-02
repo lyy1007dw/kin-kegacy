@@ -161,7 +161,7 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     @Transactional
-    public MemberDetailDTO addChildMember(Long familyId, Long parentId, MemberCreateDTO request, Long userId) {
+    public void addChildMember(Long familyId, Long parentId, MemberCreateDTO request, Long userId) {
         Family family = familyMapper.selectById(familyId);
         if (family == null) {
             throw new BusinessException("家谱不存在");
@@ -179,35 +179,36 @@ public class MemberServiceImpl implements MemberService {
             throw new BusinessException("性别不能为空");
         }
 
-        FamilyMember child = FamilyMember.builder()
-                .familyId(familyId)
-                .userId(request.getUserId())
-                .name(request.getName())
-                .gender(request.getGender())
-                .avatar(request.getAvatar())
-                .birthDate(request.getBirthDate())
-                .bio(request.getBio())
-                .isCreator(0)
-                .build();
-        memberMapper.insert(child);
+        try {
+            java.util.Map<String, Object> memberInfo = new java.util.HashMap<>();
+            memberInfo.put("name", request.getName());
+            memberInfo.put("gender", request.getGender());
+            memberInfo.put("userId", request.getUserId());
+            memberInfo.put("avatar", request.getAvatar());
+            memberInfo.put("birthDate", request.getBirthDate());
+            memberInfo.put("birthPlace", request.getBirthPlace());
+            memberInfo.put("bio", request.getBio());
+            memberInfo.put("parentId", parentId);
+            memberInfo.put("parentName", parent.getName());
+            String changesJson = objectMapper.writeValueAsString(memberInfo);
 
-        RelationTypeEnum relationType = request.getGender() == GenderEnum.MALE ?
-                RelationTypeEnum.FATHER_SON : RelationTypeEnum.MOTHER_SON;
-        
-        MemberRelation relation = MemberRelation.builder()
-                .familyId(familyId)
-                .fromMemberId(parentId)
-                .toMemberId(child.getId())
-                .relationType(relationType)
-                .build();
-        relationMapper.insert(relation);
-
-        return convertToDetailDTO(child);
+            EditRequest editRequest = EditRequest.builder()
+                    .familyId(familyId)
+                    .memberId(parentId)
+                    .applicantUserId(userId)
+                    .memberName(request.getName())
+                    .changesJson(changesJson)
+                    .status(RequestStatusEnum.PENDING)
+                    .build();
+            editRequestMapper.insert(editRequest);
+        } catch (JsonProcessingException e) {
+            throw new BusinessException("序列化成员信息失败");
+        }
     }
 
     @Override
     @Transactional
-    public MemberDetailDTO addParentMember(Long familyId, Long childId, MemberCreateDTO request, Long userId) {
+    public void addParentMember(Long familyId, Long childId, MemberCreateDTO request, Long userId) {
         Family family = familyMapper.selectById(familyId);
         if (family == null) {
             throw new BusinessException("家谱不存在");
@@ -225,30 +226,31 @@ public class MemberServiceImpl implements MemberService {
             throw new BusinessException("性别不能为空");
         }
 
-        FamilyMember parent = FamilyMember.builder()
-                .familyId(familyId)
-                .userId(request.getUserId())
-                .name(request.getName())
-                .gender(request.getGender())
-                .avatar(request.getAvatar())
-                .birthDate(request.getBirthDate())
-                .bio(request.getBio())
-                .isCreator(0)
-                .build();
-        memberMapper.insert(parent);
+        try {
+            java.util.Map<String, Object> memberInfo = new java.util.HashMap<>();
+            memberInfo.put("name", request.getName());
+            memberInfo.put("gender", request.getGender());
+            memberInfo.put("userId", request.getUserId());
+            memberInfo.put("avatar", request.getAvatar());
+            memberInfo.put("birthDate", request.getBirthDate());
+            memberInfo.put("birthPlace", request.getBirthPlace());
+            memberInfo.put("bio", request.getBio());
+            memberInfo.put("childId", childId);
+            memberInfo.put("childName", child.getName());
+            String changesJson = objectMapper.writeValueAsString(memberInfo);
 
-        RelationTypeEnum relationType = request.getGender() == GenderEnum.MALE ?
-                RelationTypeEnum.FATHER_SON : RelationTypeEnum.MOTHER_SON;
-        
-        MemberRelation relation = MemberRelation.builder()
-                .familyId(familyId)
-                .fromMemberId(parent.getId())
-                .toMemberId(childId)
-                .relationType(relationType)
-                .build();
-        relationMapper.insert(relation);
-
-        return convertToDetailDTO(parent);
+            EditRequest editRequest = EditRequest.builder()
+                    .familyId(familyId)
+                    .memberId(childId)
+                    .applicantUserId(userId)
+                    .memberName(request.getName())
+                    .changesJson(changesJson)
+                    .status(RequestStatusEnum.PENDING)
+                    .build();
+            editRequestMapper.insert(editRequest);
+        } catch (JsonProcessingException e) {
+            throw new BusinessException("序列化成员信息失败");
+        }
     }
 
     @Override
