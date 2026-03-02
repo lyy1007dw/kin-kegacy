@@ -100,10 +100,10 @@ export default {
       this.expanded = !this.expanded
     },
     handleClick() {
-      this.$emit('click', this.node)
+      this.$emit('nodeclick', this.node)
     },
     handleChildClick(child) {
-      this.$emit('click', child)
+      this.$emit('nodeclick', child)
     }
   }
 }

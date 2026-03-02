@@ -39,6 +39,8 @@ export interface Approval {
   applicantName: string
   relationDesc?: string
   memberId?: number
+  memberName?: string
+  changesJson?: string
   fieldName?: string
   oldValue?: string
   newValue?: string

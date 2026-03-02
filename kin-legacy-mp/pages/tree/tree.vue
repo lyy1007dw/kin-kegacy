@@ -31,7 +31,7 @@
         <view class="jpu-tree-card">
           <view class="jpu-tree-container">
             <view class="jpu-tree-node-item" v-for="(node, index) in treeData" :key="node.id" :style="{ marginTop: index === 0 ? '0' : '32rpx' }">
-              <TreeNode :node="node" :currentUserId="currentUserId" @click="showMemberDetail" />
+              <TreeNode :node="node" :currentUserId="currentUserId" @nodeclick="onTreeNodeClick" />
             </view>
           </view>
         </view>
@@ -60,6 +60,10 @@
         <text class="jpu-drawer-subtitle">第 {{ selectedMember.generation || 1 }} 世成员</text>
       </view>
       <view class="jpu-drawer-actions">
+        <view class="jpu-drawer-btn jpu-btn-outline" @click="goToMemberDetail">
+          <text class="jpu-drawer-btn-text">查看生平简介</text>
+          <text class="jpu-drawer-btn-arrow">⟩</text>
+        </view>
         <view class="jpu-drawer-btn jpu-btn-outline" @click="openForm('add-child')">
           <text class="jpu-drawer-btn-text">录入子嗣 (下一世)</text>
           <text class="jpu-drawer-btn-arrow">↳</text>
@@ -225,6 +229,10 @@ export default {
       this.showDrawer = true
     },
 
+    onTreeNodeClick(node) {
+      this.showMemberDetail(node)
+    },
+
     closeAllModals() {
       this.showDrawer = false
       this.showEditModal = false
@@ -284,9 +292,9 @@ export default {
       }
     },
 
-    showMemberDetail(member) {
+    goToMemberDetail() {
       uni.navigateTo({
-        url: `/pages/member-detail/member-detail?id=${member.id}`
+        url: `/pages/member-detail/member-detail?id=${this.selectedMember.id}`
       })
     }
   }

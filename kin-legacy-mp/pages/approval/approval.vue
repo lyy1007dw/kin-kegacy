@@ -68,14 +68,17 @@
             <view class="edit-info" v-if="approval.memberName">
               <text>成员: {{ approval.memberName }}</text>
             </view>
-            <view class="edit-reason">
+            <view class="edit-reason" v-if="parseChanges(approval.changesJson).length > 0">
               <text class="jpu-tip-bold">修改内容：</text>
-              <text>该功能待完善</text>
+              <view class="change-item" v-for="(change, idx) in parseChanges(approval.changesJson)" :key="idx">
+                <text class="change-field">{{ change.fieldName }}</text>
+                <text class="change-arrow">{{ change.oldValue || '(无)' }} → {{ change.newValue || '(无)' }}</text>
+              </view>
             </view>
           </view>
         </view>
 
-        <view class="jpu-approval-actions" v-if="approval.status === 'PENDING'">
+        <view class="jpu-approval-actions" v-if="isPending(approval.status)">
           <view class="jpu-btn-gray" @click="handleApproval(approval.id, 'reject')">
             <text>驳回</text>
           </view>
@@ -114,6 +117,14 @@ export default {
         case 'rejected': return '暂无已拒绝记录'
         default: return '暂无记录'
       }
+    },
+    fieldMap() {
+      return {
+        name: '姓名',
+        birthDate: '出生日期',
+        birthPlace: '出生地',
+        bio: '生平简介'
+      }
     }
   },
 
@@ -135,9 +146,25 @@ export default {
       this.loadApprovals()
     },
 
+    parseChanges(changesJson) {
+      if (!changesJson) return []
+      try {
+        const changes = typeof changesJson === 'string' ? JSON.parse(changesJson) : changesJson
+        return Object.entries(changes).map(([key, value]) => ({
+          fieldName: this.fieldMap[key] || key,
+          oldValue: value.oldValue,
+          newValue: value.newValue
+        }))
+      } catch (e) {
+        console.error('解析changesJson失败', e)
+        return []
+      }
+    },
+
     loadApprovals() {
-      if (!this.currentFamily) {
+      if (!this.currentFamily || !this.currentFamily.id) {
         this.loading = false
+        this.approvals = []
         return Promise.resolve()
       }
       
@@ -159,7 +186,8 @@ export default {
     },
 
     getStatusClass(status) {
-      switch(status) {
+      const s = status?.toUpperCase()
+      switch(s) {
         case 'PENDING': return 'jpu-tag-danger'
         case 'APPROVED': return 'jpu-tag-success'
         case 'REJECTED': return 'jpu-tag-gray'
@@ -168,20 +196,28 @@ export default {
     },
 
     getStatusText(status) {
-      switch(status) {
+      const s = status?.toUpperCase()
+      switch(s) {
         case 'PENDING': return '待核准'
         case 'APPROVED': return '已通过'
         case 'REJECTED': return '已拒绝'
-        default: return status
+        default: return status || '未知'
       }
+    },
+
+    isPending(status) {
+      return status?.toUpperCase() === 'PENDING'
     },
 
     handleApproval(id, action) {
       this.leavingId = id
       
+      uni.showLoading({ title: '处理中...' })
+      
       api.approval.handle(this.currentFamily.id, id, { 
         action: action === 'approve' ? 'approve' : 'reject' 
       }).then(() => {
+        uni.hideLoading()
         uni.showToast({ 
           title: action === 'approve' ? '已准奏' : '已驳回', 
           icon: 'success' 
@@ -190,7 +226,9 @@ export default {
         this.approvals = this.approvals.filter(a => a.id !== id)
         this.leavingId = null
       }).catch(error => {
+        uni.hideLoading()
         this.leavingId = null
+        console.error('处理审批失败', error)
         uni.showToast({ title: '操作失败', icon: 'none' })
       })
     }
@@ -474,5 +512,23 @@ export default {
   margin-top: 12rpx;
   font-size: 26rpx;
   color: #666;
+}
+
+.change-item {
+  display: flex;
+  align-items: center;
+  padding: 8rpx 0;
+  font-size: 24rpx;
+}
+
+.change-field {
+  color: #8E292C;
+  font-weight: bold;
+  min-width: 120rpx;
+}
+
+.change-arrow {
+  color: #666;
+  margin-left: 16rpx;
 }
 </style>
