@@ -17,6 +17,7 @@ public class MemberCreateDTO {
     private GenderEnum gender;
     private String avatar;
     private LocalDate birthDate;
+    private String birthPlace;
     private String bio;
     private Long parentId;
 }
