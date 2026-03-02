@@ -70,10 +70,10 @@ public class UserMemberController {
 
     @PostMapping("/member/{id}/add-child")
     @RequireLogin
-    @RequireAdmin
+    @RequireAdmin(familyIdParam = "familyId")
     @OperationLogger(module = "成员管理", operation = "录入子嗣")
     public Result<MemberDetailDTO> addChildMember(
-            @PathVariable Long familyId,
+            @RequestParam Long familyId,
             @PathVariable Long id,
             @RequestBody MemberCreateDTO request) {
         Long userId = UserContextUtil.getUserId();
@@ -82,10 +82,10 @@ public class UserMemberController {
 
     @PostMapping("/member/{id}/add-parent")
     @RequireLogin
-    @RequireAdmin
+    @RequireAdmin(familyIdParam = "familyId")
     @OperationLogger(module = "成员管理", operation = "追溯先祖")
     public Result<MemberDetailDTO> addParentMember(
-            @PathVariable Long familyId,
+            @RequestParam Long familyId,
             @PathVariable Long id,
             @RequestBody MemberCreateDTO request) {
         Long userId = UserContextUtil.getUserId();
