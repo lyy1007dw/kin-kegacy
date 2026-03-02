@@ -102,7 +102,7 @@ export const updateMember = (familyId: number, memberId: number, data: Partial<M
 }
 
 export const deleteMember = (familyId: number, memberId: number) => {
-  return request.delete(`/family/${familyId}/member/${memberId}`)
+  return request.delete(`/admin/member/${memberId}?familyId=${familyId}`)
 }
 
 export const addMember = (data: AddMemberParams) => {

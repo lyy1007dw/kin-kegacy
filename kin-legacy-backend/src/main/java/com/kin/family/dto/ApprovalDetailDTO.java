@@ -18,6 +18,7 @@ public class ApprovalDetailDTO {
     private Long applicantUserId;
     private String applicantName;
     private String relationDesc;
+    private String joinType;
     private Long memberId;
     private String memberName;
     private String changesJson;

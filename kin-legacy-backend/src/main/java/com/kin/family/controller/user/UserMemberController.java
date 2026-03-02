@@ -126,7 +126,8 @@ public class UserMemberController {
             @PathVariable Long familyId,
             @PathVariable Long id) {
         Long userId = UserContextUtil.getUserId();
-        memberService.deleteMember(familyId, id, userId);
+        String globalRole = UserContextUtil.getGlobalRole();
+        memberService.deleteMember(familyId, id, userId, globalRole);
         return Result.success();
     }
 }

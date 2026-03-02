@@ -32,6 +32,8 @@ public class JoinRequest {
 
     private String relationDesc;
 
+    private String joinType;
+
     private RequestStatusEnum status;
 
     private Long reviewerId;

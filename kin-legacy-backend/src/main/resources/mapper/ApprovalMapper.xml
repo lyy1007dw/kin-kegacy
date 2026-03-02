@@ -18,7 +18,8 @@
                 NULL AS reviewer_id,
                 status,
                 create_time,
-                NULL AS reviewed_at
+                NULL AS reviewed_at,
+                join_type
             FROM join_request
             WHERE family_id = #{familyId}
             <if test="type == null or type == 'join'">
@@ -44,7 +45,8 @@
                 e.reviewer_id,
                 e.status,
                 e.create_time,
-                e.reviewed_at
+                e.reviewed_at,
+                NULL AS join_type
             FROM edit_request e
             LEFT JOIN user u ON e.applicant_user_id = u.id
             WHERE e.family_id = #{familyId}
@@ -79,7 +81,8 @@
                 NULL AS reviewer_id,
                 status,
                 create_time,
-                NULL AS reviewed_at
+                NULL AS reviewed_at,
+                join_type
             FROM join_request
             <where>
                 <if test="type == null or type == 'join'">
@@ -106,7 +109,8 @@
                 e.reviewer_id,
                 e.status,
                 e.create_time,
-                e.reviewed_at
+                e.reviewed_at,
+                NULL AS join_type
             FROM edit_request e
             LEFT JOIN user u ON e.applicant_user_id = u.id
             <where>

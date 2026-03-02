@@ -80,4 +80,15 @@ public class AdminMemberController {
             @RequestParam Long targetGenealogyId) {
         return Result.success(memberService.checkMemberTransfer(memberId, targetGenealogyId));
     }
+
+    @DeleteMapping("/member/{id}")
+    @RequireLogin
+    @RequireRole("SUPER_ADMIN")
+    @OperationLogger(module = "成员管理", operation = "超级管理员删除成员")
+    public Result<Void> deleteMemberAdmin(
+            @PathVariable Long id,
+            @RequestParam Long familyId) {
+        memberService.deleteMemberByAdmin(familyId, id);
+        return Result.success();
+    }
 }

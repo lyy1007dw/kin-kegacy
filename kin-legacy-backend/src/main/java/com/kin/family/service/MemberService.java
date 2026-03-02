@@ -20,7 +20,7 @@ public interface MemberService {
     void applyEditMember(Long familyId, Long memberId, MemberEditDTO request, Long userId);
     List<TreeNodeVO> getFamilyTree(Long familyId, Long currentUserId);
     MemberDetailDTO updateMember(Long familyId, Long memberId, MemberCreateDTO request, Long userId);
-    void deleteMember(Long familyId, Long memberId, Long userId);
+    void deleteMember(Long familyId, Long memberId, Long userId, String globalRole);
     List<MemberDetailDTO> getAllMembers();
     PageResult<MemberDetailDTO> getMembersPaged(Integer page, Integer size);
     MemberDetailDTO addMemberByUser(Long familyId, Long userId, MemberCreateByAdminDTO request);
@@ -28,4 +28,5 @@ public interface MemberService {
     PageResult<MemberVO> queryMembers(MemberQueryRequest query);
     MemberDetailDTO updateMemberByAdmin(Long memberId, MemberEditByAdminDTO request);
     MemberTransferCheckDTO checkMemberTransfer(Long memberId, Long targetGenealogyId);
+    void deleteMemberByAdmin(Long familyId, Long memberId);
 }

@@ -37,6 +37,7 @@ public class MemberServiceImpl implements MemberService {
     private final FamilyMemberMapper memberMapper;
     private final MemberRelationMapper relationMapper;
     private final EditRequestMapper editRequestMapper;
+    private final JoinRequestMapper joinRequestMapper;
     private final UserMapper userMapper;
     private final UserGenealogyMapper userGenealogyMapper;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -54,40 +55,8 @@ public class MemberServiceImpl implements MemberService {
                         .orderByAsc(FamilyMember::getId)
         );
 
-        List<MemberRelation> relations = relationMapper.selectList(
-                new LambdaQueryWrapper<MemberRelation>()
-                        .eq(MemberRelation::getFamilyId, familyId)
-        );
-
-        Map<Long, List<MemberDetailDTO>> childrenMap = members.stream()
-                .map(this::convertToDetailDTO)
-                .collect(Collectors.groupingBy(m -> {
-                    for (MemberRelation r : relations) {
-                        if (r.getToMemberId().equals(m.getId()) &&
-                            (r.getRelationType() == RelationTypeEnum.FATHER_SON ||
-                             r.getRelationType() == RelationTypeEnum.MOTHER_SON)) {
-                            return r.getFromMemberId();
-                        }
-                    }
-                    return 0L;
-                }));
-
         return members.stream()
-                .filter(m -> {
-                    for (MemberRelation r : relations) {
-                        if (r.getToMemberId().equals(m.getId()) &&
-                            (r.getRelationType() == RelationTypeEnum.FATHER_SON ||
-                             r.getRelationType() == RelationTypeEnum.MOTHER_SON)) {
-                            return false;
-                        }
-                    }
-                    return true;
-                })
-                .map(m -> {
-                    MemberDetailDTO dto = convertToDetailDTO(m);
-                    dto.setChildren(childrenMap.getOrDefault(m.getId(), new ArrayList<>()));
-                    return dto;
-                })
+                .map(this::convertToDetailDTO)
                 .toList();
     }
 
@@ -179,31 +148,15 @@ public class MemberServiceImpl implements MemberService {
             throw new BusinessException("性别不能为空");
         }
 
-        try {
-            java.util.Map<String, Object> memberInfo = new java.util.HashMap<>();
-            memberInfo.put("name", request.getName());
-            memberInfo.put("gender", request.getGender());
-            memberInfo.put("userId", request.getUserId());
-            memberInfo.put("avatar", request.getAvatar());
-            memberInfo.put("birthDate", request.getBirthDate());
-            memberInfo.put("birthPlace", request.getBirthPlace());
-            memberInfo.put("bio", request.getBio());
-            memberInfo.put("parentId", parentId);
-            memberInfo.put("parentName", parent.getName());
-            String changesJson = objectMapper.writeValueAsString(memberInfo);
-
-            EditRequest editRequest = EditRequest.builder()
-                    .familyId(familyId)
-                    .memberId(parentId)
-                    .applicantUserId(userId)
-                    .memberName(request.getName())
-                    .changesJson(changesJson)
-                    .status(RequestStatusEnum.PENDING)
-                    .build();
-            editRequestMapper.insert(editRequest);
-        } catch (JsonProcessingException e) {
-            throw new BusinessException("序列化成员信息失败");
-        }
+        JoinRequest joinRequest = JoinRequest.builder()
+                .familyId(familyId)
+                .applicantUserId(userId)
+                .applicantName(request.getName())
+                .joinType("add_child")
+                .relationDesc("为 [" + parent.getName() + "] 录入子嗣")
+                .status(RequestStatusEnum.PENDING)
+                .build();
+        joinRequestMapper.insert(joinRequest);
     }
 
     @Override
@@ -226,31 +179,15 @@ public class MemberServiceImpl implements MemberService {
             throw new BusinessException("性别不能为空");
         }
 
-        try {
-            java.util.Map<String, Object> memberInfo = new java.util.HashMap<>();
-            memberInfo.put("name", request.getName());
-            memberInfo.put("gender", request.getGender());
-            memberInfo.put("userId", request.getUserId());
-            memberInfo.put("avatar", request.getAvatar());
-            memberInfo.put("birthDate", request.getBirthDate());
-            memberInfo.put("birthPlace", request.getBirthPlace());
-            memberInfo.put("bio", request.getBio());
-            memberInfo.put("childId", childId);
-            memberInfo.put("childName", child.getName());
-            String changesJson = objectMapper.writeValueAsString(memberInfo);
-
-            EditRequest editRequest = EditRequest.builder()
-                    .familyId(familyId)
-                    .memberId(childId)
-                    .applicantUserId(userId)
-                    .memberName(request.getName())
-                    .changesJson(changesJson)
-                    .status(RequestStatusEnum.PENDING)
-                    .build();
-            editRequestMapper.insert(editRequest);
-        } catch (JsonProcessingException e) {
-            throw new BusinessException("序列化成员信息失败");
-        }
+        JoinRequest joinRequest = JoinRequest.builder()
+                .familyId(familyId)
+                .applicantUserId(userId)
+                .applicantName(request.getName())
+                .joinType("add_parent")
+                .relationDesc("为 [" + child.getName() + "] 追溯先祖")
+                .status(RequestStatusEnum.PENDING)
+                .build();
+        joinRequestMapper.insert(joinRequest);
     }
 
     @Override
@@ -367,14 +304,6 @@ public class MemberServiceImpl implements MemberService {
                 .map(this::convertToTreeNode)
                 .collect(Collectors.toMap(TreeNodeVO::getId, v -> v));
 
-        Map<Long, Long> spouseMap = relations.stream()
-                .filter(r -> r.getRelationType() == RelationTypeEnum.HUSBAND_WIFE)
-                .collect(Collectors.toMap(
-                        MemberRelation::getFromMemberId,
-                        MemberRelation::getToMemberId,
-                        (v1, v2) -> v1
-                ));
-
         for (MemberRelation r : relations) {
             TreeNodeVO fromNode = memberMap.get(r.getFromMemberId());
             TreeNodeVO toNode = memberMap.get(r.getToMemberId());
@@ -409,11 +338,22 @@ public class MemberServiceImpl implements MemberService {
                 })
                 .toList();
 
+        calculateGeneration(rootNodes, 1);
+
         if (currentUserId != null) {
             markCurrentUser(rootNodes, family, currentUserId);
         }
 
         return rootNodes;
+    }
+
+    private void calculateGeneration(List<TreeNodeVO> nodes, int generation) {
+        for (TreeNodeVO node : nodes) {
+            node.setGeneration(generation);
+            if (node.getChildren() != null && !node.getChildren().isEmpty()) {
+                calculateGeneration(node.getChildren(), generation + 1);
+            }
+        }
     }
 
     private void markCurrentUser(List<TreeNodeVO> nodes, Family family, Long currentUserId) {
@@ -485,13 +425,15 @@ public class MemberServiceImpl implements MemberService {
     }
 
     @Override
-    public void deleteMember(Long familyId, Long memberId, Long userId) {
+    public void deleteMember(Long familyId, Long memberId, Long userId, String globalRole) {
         Family family = familyMapper.selectById(familyId);
         if (family == null) {
             throw new BusinessException("家谱不存在");
         }
 
-        if (!family.getCreatorId().equals(userId)) {
+        boolean isSuperAdmin = "SUPER_ADMIN".equals(globalRole);
+        
+        if (!isSuperAdmin && !family.getCreatorId().equals(userId)) {
             throw new BusinessException(403, "只有创建者才能删除成员");
         }
 
@@ -722,5 +664,29 @@ public class MemberServiceImpl implements MemberService {
                 .warnings(warnings)
                 .affectedRelations((int) relationCount)
                 .build();
+    }
+
+    @Override
+    public void deleteMemberByAdmin(Long familyId, Long memberId) {
+        Family family = familyMapper.selectById(familyId);
+        if (family == null) {
+            throw new BusinessException("家谱不存在");
+        }
+
+        FamilyMember member = memberMapper.selectById(memberId);
+        if (member == null || !member.getFamilyId().equals(familyId)) {
+            throw new BusinessException("成员不存在");
+        }
+
+        if (member.getIsCreator() == 1) {
+            throw new BusinessException("不能删除创建者");
+        }
+
+        LambdaQueryWrapper<MemberRelation> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(MemberRelation::getFamilyId, familyId)
+                .and(w -> w.eq(MemberRelation::getFromMemberId, memberId).or().eq(MemberRelation::getToMemberId, memberId));
+        relationMapper.delete(wrapper);
+
+        memberMapper.deleteById(memberId);
     }
 }

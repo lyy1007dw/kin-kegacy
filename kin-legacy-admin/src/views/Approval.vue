@@ -15,6 +15,7 @@ export interface ApprovalItem {
   applicantUserId: number
   applicantName: string
   relationDesc?: string
+  joinType?: string
   memberId?: number
   memberName?: string
   changesJson?: string
@@ -77,6 +78,21 @@ const getChangesList = (changesJson: string) => {
   }
 }
 
+const getApprovalType = (changesJson: string): { type: string; label: string } => {
+  if (!changesJson) return { type: 'edit', label: '修改信息' }
+  try {
+    const changes = JSON.parse(changesJson)
+    if (changes.parentId !== undefined && changes.parentId !== null) {
+      return { type: 'add-child', label: '录入子嗣' }
+    } else if (changes.childId !== undefined && changes.childId !== null) {
+      return { type: 'add-parent', label: '追溯先祖' }
+    }
+    return { type: 'edit', label: '修改信息' }
+  } catch (e) {
+    return { type: 'edit', label: '修改信息' }
+  }
+}
+
 const getStatusType = (status: string) => {
   switch (status?.toLowerCase()) {
     case 'pending': return 'warning'
@@ -84,6 +100,24 @@ const getStatusType = (status: string) => {
     case 'rejected': return 'error'
     default: return 'default'
   }
+}
+
+const getFieldLabel = (key: string): string => {
+  const fieldMap: Record<string, string> = {
+    name: '姓名',
+    gender: '性别',
+    birthDate: '出生日期',
+    birthPlace: '出生地',
+    bio: '简介'
+  }
+  return fieldMap[key] || key
+}
+
+const getValueDisplay = (value: any): string => {
+  if (typeof value === 'object' && value !== null && value.newValue !== undefined) {
+    return value.newValue
+  }
+  return String(value)
 }
 
 const getStatusText = (status: string) => {
@@ -95,9 +129,26 @@ const getStatusText = (status: string) => {
   }
 }
 
+const getJoinTypeLabel = (joinType?: string): string => {
+  switch (joinType) {
+    case 'add_child': return '录入子嗣'
+    case 'add_parent': return '追溯先祖'
+    default: return '新成员加入'
+  }
+}
+
+const getJoinTypeTag = (joinType?: string): 'info' | 'warning' | 'success' => {
+  switch (joinType) {
+    case 'add_child': return 'info'
+    case 'add_parent': return 'warning'
+    default: return 'success'
+  }
+}
+
 const joinColumns: DataTableColumns<ApprovalItem> = [
   { title: '申请人', key: 'applicantName', width: 120, render: (row) => formatValue(row.applicantName) },
-  { title: '申请加入', key: 'relationDesc', minWidth: 150, render: (row) => formatValue(row.relationDesc) },
+  { title: '申请类型', key: 'joinType', width: 120, render: (row) => h(NTag, { type: getJoinTypeTag(row.joinType), size: 'small' }, { default: () => getJoinTypeLabel(row.joinType) }) },
+  { title: '申请内容', key: 'relationDesc', minWidth: 200, render: (row) => formatValue(row.relationDesc) },
   { title: '申请时间', key: 'createTime', width: 180, render: (row) => formatDate(row.createTime) },
   { 
     title: '状态', 
@@ -132,6 +183,14 @@ const joinColumns: DataTableColumns<ApprovalItem> = [
 
 const editColumns: DataTableColumns<ApprovalItem> = [
   { title: '申请人', key: 'applicantName', width: 120, render: (row) => formatValue(row.applicantName) },
+  { title: '申请类型', key: 'type', width: 120, render: (row) => {
+      const approvalType = getApprovalType(row.changesJson)
+      return h(NTag, { 
+        type: approvalType.type === 'edit' ? 'default' : 'info', 
+        size: 'small' 
+      }, { default: () => approvalType.label })
+    }
+  },
   { title: '成员姓名', key: 'memberName', width: 120, render: (row) => formatValue(row.memberName) },
   { title: '申请时间', key: 'createTime', width: 180, render: (row) => formatDate(row.createTime) },
   { 
@@ -311,12 +370,17 @@ onMounted(() => {
     <NModal
       v-model:show="showDetailModal"
       preset="card"
-      title="修改详情"
+      :title="getApprovalType(detailData?.changesJson).label + '详情'"
       style="width: 600px; max-width: 90vw;"
     >
       <NDescriptions :column="1" label-placement="left" v-if="detailData">
         <NDescriptionsItem label="申请人">
           {{ detailData.applicantName }}
+        </NDescriptionsItem>
+        <NDescriptionsItem label="申请类型">
+          <NTag :type="getApprovalType(detailData.changesJson).type === 'edit' ? 'default' : 'info'" size="small">
+            {{ getApprovalType(detailData.changesJson).label }}
+          </NTag>
         </NDescriptionsItem>
         <NDescriptionsItem label="成员姓名">
           {{ detailData.memberName || '-' }}
@@ -326,7 +390,7 @@ onMounted(() => {
         </NDescriptionsItem>
       </NDescriptions>
       
-      <div class="detail-changes" v-if="detailData?.changesJson">
+      <div class="detail-changes" v-if="detailData?.changesJson && getApprovalType(detailData.changesJson).type === 'edit'">
         <div class="detail-changes-title">修改内容</div>
         <div 
           v-for="(change, idx) in getChangesList(detailData.changesJson)" 
@@ -336,6 +400,15 @@ onMounted(() => {
           <span class="change-field">{{ change.fieldName }}</span>
           <span class="change-arrow">{{ change.oldValue }} → {{ change.newValue }}</span>
         </div>
+      </div>
+      <div v-else-if="detailData?.changesJson" class="new-member-info">
+        <div class="detail-changes-title">{{ getApprovalType(detailData.changesJson).label }}信息</div>
+        <template v-for="(value, key) in JSON.parse(detailData.changesJson)" :key="key">
+          <div class="change-row" v-if="key !== 'parentId' && key !== 'childId' && key !== 'parentName' && key !== 'childName'">
+            <span class="change-field">{{ getFieldLabel(key as string) }}</span>
+            <span class="change-arrow">{{ getValueDisplay(value) }}</span>
+          </div>
+        </template>
       </div>
       <div v-else class="no-changes">
         暂无修改内容

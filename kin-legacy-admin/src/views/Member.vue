@@ -305,6 +305,11 @@ const confirmTransfer = async () => {
 }
 
 const handleDelete = (row: Member) => {
+  const familyId = row.familyId || row.genealogyId
+  if (!familyId) {
+    message.error('无法获取家谱ID')
+    return
+  }
   dialog.warning({
     title: '确认删除',
     content: `确定要删除成员 "${row.name}" 吗？`,
@@ -312,7 +317,7 @@ const handleDelete = (row: Member) => {
     negativeText: '取消',
     onPositiveClick: async () => {
       try {
-        await deleteMember(row.familyId, row.id)
+        await deleteMember(familyId, row.id)
         message.success('删除成功')
         fetchData()
       } catch (error: any) {
