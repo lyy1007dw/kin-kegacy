@@ -92,27 +92,28 @@
             UNION ALL
 
             SELECT
-                id,
+                e.id,
                 'edit' AS type,
-                family_id,
-                applicant_user_id,
-                NULL AS applicant_name,
+                e.family_id,
+                e.applicant_user_id,
+                u.name AS applicant_name,
                 NULL AS relation_desc,
-                member_id,
-                member_name,
-                changes_json,
-                reject_reason,
-                reviewer_id,
-                status,
-                create_time,
-                reviewed_at
-            FROM edit_request
+                e.member_id,
+                e.member_name,
+                e.changes_json,
+                e.reject_reason,
+                e.reviewer_id,
+                e.status,
+                e.create_time,
+                e.reviewed_at
+            FROM edit_request e
+            LEFT JOIN user u ON e.applicant_user_id = u.id
             <where>
                 <if test="type == null or type == 'edit'">
                     AND 1=1
                 </if>
                 <if test="status != null and status != ''">
-                    AND status = #{status}
+                    AND e.status = #{status}
                 </if>
             </where>
         ) AS approvals
