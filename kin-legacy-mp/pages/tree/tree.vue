@@ -284,9 +284,8 @@ export default {
         }
         
         uni.hideLoading()
-        uni.showToast({ title: '已提交', icon: 'success' })
+        uni.showToast({ title: '申请已提交，待审批', icon: 'success' })
         this.closeAllModals()
-        this.loadTreeData()
       } catch (error) {
         uni.hideLoading()
       }
