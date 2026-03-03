@@ -26,30 +26,112 @@
         <text>家族世系图</text>
       </view>
 
-      <!-- 家谱树容器 - 支持拖动 -->
-      <view class="jpu-tree-scroll" v-if="treeData.length > 0">
-        <movable-area class="jpu-movable-area">
-          <movable-view 
-            class="jpu-movable-view" 
-            direction="all" 
-            :x="treeX" 
-            :y="treeY"
-            :out-of-bounds="true"
-            friction="2"
-            @change="onMovableChange"
+      <!-- 家谱树容器 -->
+      <view class="family-tree-container" v-if="flatNodes.length > 0">
+        <!-- 工具栏 -->
+        <view class="toolbar">
+          <view class="toolbar-btn" @click="resetView">
+            <text class="toolbar-icon">⊙</text>
+            <text class="toolbar-text">复位</text>
+          </view>
+          <view class="toolbar-btn" @click="zoomIn">
+            <text class="toolbar-icon">+</text>
+          </view>
+          <view class="scale-display">
+            <text>{{ Math.round(scale * 100) }}%</text>
+          </view>
+          <view class="toolbar-btn" @click="zoomOut">
+            <text class="toolbar-icon">−</text>
+          </view>
+          <view class="toolbar-btn" @click="expandAll">
+            <text class="toolbar-text">展开全部</text>
+          </view>
+        </view>
+
+        <!-- 画布区域 -->
+        <scroll-view
+          class="canvas-scroll"
+          scroll-x
+          scroll-y
+          :scroll-top="scrollTop"
+          :scroll-left="scrollLeft"
+        >
+          <view
+            class="canvas"
+            :style="{
+              transform: `scale(${scale})`,
+              transformOrigin: 'top left',
+              width: canvasWidth + 'px',
+              height: canvasHeight + 'px'
+            }"
           >
-            <view class="jpu-tree-card">
-              <view class="jpu-tree-container">
-                <block v-for="rootNode in treeData" :key="rootNode.id">
-                  <TreeNode 
-                    :node="rootNode" 
-                    @click="onTreeNodeClick"
-                  />
-                </block>
-              </view>
+            <!-- 连接线层 -->
+            <view class="lines-layer">
+              <block v-for="line in lines" :key="line.id">
+                <view
+                  class="connect-line vertical"
+                  :style="{
+                    left: line.x + 'px',
+                    top: line.y1 + 'px',
+                    height: (line.y2 - line.y1) + 'px'
+                  }"
+                />
+                <view
+                  class="connect-line horizontal"
+                  :style="{
+                    left: line.x + 'px',
+                    top: line.y2 + 'px',
+                    width: nodeIndent + 'px'
+                  }"
+                />
+              </block>
             </view>
-          </movable-view>
-        </movable-area>
+
+            <!-- 节点层 -->
+            <block v-for="node in flatNodes" :key="node.id">
+              <view
+                class="node-wrapper"
+                :style="{
+                  left: node.x + 'px',
+                  top: node.y + 'px',
+                  width: nodeWidth + 'px'
+                }"
+              >
+                <!-- 折叠按钮 -->
+                <view
+                  v-if="node.hasChildren"
+                  class="collapse-btn"
+                  :class="{ collapsed: node.collapsed }"
+                  @click="toggleCollapse(node.id)"
+                >
+                  <text>{{ node.collapsed ? '+' : '−' }}</text>
+                </view>
+
+                <!-- 成员卡片 -->
+                <view
+                  class="member-card"
+                  :class="[node.gender === 'female' ? 'card-female' : 'card-male', { 'card-self': node.currentUser }]"
+                  @click="onMemberTap(node)"
+                >
+                  <view class="card-left">
+                    <view class="gender-badge" :class="node.gender === 'female' ? 'badge-female' : 'badge-male'">
+                      <text>{{ node.gender === 'female' ? '女' : '男' }}</text>
+                    </view>
+                  </view>
+                  <view class="card-right">
+                    <view class="name-row">
+                      <text class="member-name">{{ node.name }}</text>
+                      <view v-if="node.currentUser" class="self-tag"><text>我</text></view>
+                    </view>
+                    <view class="gen-badge">
+                      <text>第 {{ node.generation }} 世</text>
+                    </view>
+                  </view>
+                </view>
+              </view>
+            </block>
+          </view>
+        </scroll-view>
       </view>
 
       <view v-else class="jpu-empty-state">
@@ -89,78 +171,63 @@
         </view>
         <view class="jpu-drawer-btn jpu-btn-danger" @click="openForm('edit-member')">
           <text class="jpu-drawer-btn-text">修正小传</text>
-          <text class="jpu-drawer-btn-arrow">✎</text>
         </view>
       </view>
     </view>
 
-    <!-- 表单弹窗 -->
-    <view v-if="showEditModal" class="jpu-modal-center">
-      <view class="jpu-modal-header">
-        <text class="jpu-modal-title">{{ formTitle }}</text>
-        <text class="jpu-modal-close" @click="closeAllModals">×</text>
-      </view>
-      <view class="jpu-modal-body">
-        <view class="jpu-form-group">
-          <text class="jpu-form-label">尊讳/姓名</text>
-          <input 
-            class="jpu-form-input" 
-            :value="editForm.name"
-            @input="editForm.name = $event.detail.value"
-            placeholder="输入真实姓名"
-            placeholder-class="jpu-placeholder"
-          />
+    <!-- 邀请码-modal -->
+    <view class="jpu-modal" :class="{ 'jpu-open': showInviteModal }">
+      <view class="jpu-modal-content">
+        <view class="jpu-modal-header">
+          <text class="jpu-modal-title">邀请亲友</text>
+          <text class="jpu-modal-close" @click="showInviteModal = false">×</text>
         </view>
-        <view class="jpu-form-group">
-          <text class="jpu-form-label">性别</text>
-          <view class="jpu-radio-group">
-            <label class="jpu-radio-item">
-              <radio class="jpu-radio" value="male" :checked="editForm.gender === 'male'" @click="editForm.gender = 'male'" />
-              <text class="jpu-radio-text">男</text>
-            </label>
-            <label class="jpu-radio-item">
-              <radio class="jpu-radio" value="female" :checked="editForm.gender === 'female'" @click="editForm.gender = 'female'" />
-              <text class="jpu-radio-text">女</text>
-            </label>
+        <view class="jpu-modal-body">
+          <view class="jpu-qrcode-wrap">
+            <image :src="qrCodeUrl" class="jpu-qrcode" mode="aspectFit" />
+          </view>
+          <view class="jpu-code-display">
+            <text class="jpu-code-label">邀请码</text>
+            <text class="jpu-code-value">{{ currentFamily.code }}</text>
           </view>
         </view>
-        <view v-if="formType === 'add-parent'" class="jpu-tip-warning">
-          <text class="jpu-tip-bold">注意：</text>
-          <text>追溯先祖将自动重新推算当前分支所有后裔的世代辈分。</text>
-        </view>
-      </view>
-      <view class="jpu-modal-footer">
-        <view class="jpu-btn-gray" @click="closeAllModals">
-          <text>作罢</text>
-        </view>
-        <view class="jpu-btn-primary" @click="submitForm">
-          <text>落笔确认</text>
-        </view>
       </view>
     </view>
 
-    <!-- 邀请弹窗 -->
-    <view v-if="showInviteModal" class="jpu-modal-center">
-      <view class="jpu-modal-header">
-        <text class="jpu-modal-title">邀请家人加入</text>
-        <text class="jpu-modal-close" @click="showInviteModal = false">×</text>
-      </view>
-      <view class="jpu-modal-body">
-        <view class="jpu-qr-container">
-          <image class="jpu-qr-image" :src="qrCodeUrl" mode="aspectFit" />
+    <!-- 录入/修改表单弹窗 -->
+    <view class="jpu-modal" :class="{ 'jpu-open': showEditModal }">
+      <view class="jpu-modal-content">
+        <view class="jpu-modal-header">
+          <text class="jpu-modal-title">
+            {{ formType === 'add-child' ? '录入子嗣' : (formType === 'add-parent' ? '追溯先祖' : '修正小传') }}
+          </text>
+          <text class="jpu-modal-close" @click="showEditModal = false">×</text>
         </view>
-        <view class="jpu-code-display">
-          <text class="jpu-code-label">家谱码</text>
-          <text class="jpu-code-value">{{ currentFamily.code }}</text>
+        <view class="jpu-modal-body">
+          <view class="jpu-form-item">
+            <text class="jpu-form-label">姓名</text>
+            <input class="jpu-form-input" v-model="editForm.name" placeholder="请输入姓名" />
+          </view>
+          <view class="jpu-form-item" v-if="formType !== 'edit-member'">
+            <text class="jpu-form-label">性别</text>
+            <view class="jpu-form-radio-group">
+              <view class="jpu-form-radio" :class="{ active: editForm.gender === 'male' }" @click="editForm.gender = 'male'">
+                <text>男</text>
+              </view>
+              <view class="jpu-form-radio" :class="{ active: editForm.gender === 'female' }" @click="editForm.gender = 'female'">
+                <text>女</text>
+              </view>
+            </view>
+          </view>
+          <view class="jpu-form-btn-group">
+            <view class="jpu-form-btn jpu-form-btn-cancel" @click="showEditModal = false">
+              <text>取消</text>
+            </view>
+            <view class="jpu-form-btn jpu-form-btn-submit" @click="submitForm">
+              <text>提交</text>
+            </view>
+          </view>
         </view>
-      </view>
-      <view class="jpu-modal-footer">
-        <view class="jpu-btn-outline" @click="copyCode">
-          <text>复制邀请码</text>
-        </view>
-        <button class="jpu-btn-primary" open-type="share">
-          <text>分享邀请</text>
-        </button>
       </view>
     </view>
   </view>
@@ -169,12 +236,15 @@
 <script>
 import { mapState } from 'vuex'
 import api from '../../utils/api'
-import TreeNode from '../../components/TreeNode.vue'
+
+// 布局常量
+const NODE_WIDTH   = 260
+const NODE_HEIGHT  = 72
+const NODE_INDENT  = 40
+const NODE_GAP_Y   = 20
+const CANVAS_PAD   = 24
 
 export default {
-  components: {
-    TreeNode
-  },
   data() {
     return {
       showInviteModal: false,
@@ -185,12 +255,22 @@ export default {
       expandedIds: {},
       selectedMember: {},
       formType: '',
-      treeX: 50,
-      treeY: 50,
       editForm: {
         name: '',
         gender: 'male'
-      }
+      },
+
+      // 树形布局数据
+      NODE_WIDTH,
+      NODE_INDENT,
+      collapsedMap: {},
+
+      // 缩放 & 平移
+      scale: 1,
+      minScale: 0.3,
+      maxScale: 2.5,
+      scrollTop: 0,
+      scrollLeft: 0,
     }
   },
 
@@ -203,35 +283,124 @@ export default {
       var code = this.currentFamily && this.currentFamily.code || '000000'
       return 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=FamilyCode' + code
     },
-    formTitle() {
-      if (this.formType === 'add-child') return '为 [' + this.selectedMember.name + '] 录入子嗣'
-      if (this.formType === 'add-parent') return '为 [' + this.selectedMember.name + '] 追溯先祖'
-      if (this.formType === 'edit-member') return '修正小传'
-      return ''
+
+    // 后端返回的是嵌套树形结构，可能有多个根节点
+    tree() {
+      if (!this.treeData || this.treeData.length === 0) return null
+      
+      // 后端返回的是根节点数组，每个节点已有children
+      // 需要添加collapsed状态
+      const processNode = (node) => {
+        if (!node) return null
+        return {
+          ...node,
+          collapsed: !!this.collapsedMap[node.id],
+          hasChildren: node.children && node.children.length > 0,
+          children: node.children ? node.children.map(c => processNode(c)) : []
+        }
+      }
+      
+      // 返回所有根节点
+      return this.treeData.map(root => processNode(root))
+    },
+
+    //扁平化节点带坐标 - 支持多个根节点
+    flatNodes() {
+      if (!this.tree) return []
+      const result = []
+      let currentY = CANVAS_PAD
+      
+      // 多个根节点水平排列
+      const roots = Array.isArray(this.tree) ? this.tree : [this.tree]
+      
+      roots.forEach(rootNode => {
+        if (!rootNode) return
+        
+        const traverse = (node, depth) => {
+          if (!node) return
+
+          const x = CANVAS_PAD + depth * NODE_INDENT
+          const y = currentY
+          currentY += NODE_HEIGHT + NODE_GAP_Y
+
+          result.push({ ...node, x, y, depth })
+
+          if (!node.collapsed && node.children && node.children.length > 0) {
+            node.children.forEach(child => traverse(child, depth + 1))
+          }
+        }
+        
+        traverse(rootNode, 0)
+        currentY += NODE_HEIGHT // 根节点之间留空
+      })
+      
+      return result
+    },
+
+    // 连接线数据 - 通过深度优先搜索找父节点
+    lines() {
+      const lines = []
+      const flatNodeMap = {}
+      this.flatNodes.forEach(n => { flatNodeMap[n.id] = n })
+      
+      // 在树结构中递归查找父节点
+      const findParent = (nodeId, nodes) => {
+        if (!nodes || nodes.length === 0) return null
+        for (const node of nodes) {
+          if (node.children && node.children.length > 0) {
+            const child = node.children.find(c => c.id === nodeId)
+            if (child) {
+              return flatNodeMap[node.id]
+            }
+            const parent = findParent(nodeId, node.children)
+            if (parent) return parent
+          }
+        }
+        return null
+      }
+      
+      this.flatNodes.forEach(node => {
+        const parent = findParent(node.id, this.tree)
+        if (parent) {
+          const lineX = parent.x + 20
+          const y1 = parent.y + NODE_HEIGHT
+          const y2 = node.y + NODE_HEIGHT / 2
+          lines.push({ id: `${parent.id}-${node.id}`, x: lineX, y1, y2 })
+        }
+      })
+      return lines
+    },
+    
+    canvasWidth() {
+      if (!this.flatNodes.length) return 400
+      return Math.max(...this.flatNodes.map(n => n.x + NODE_WIDTH)) + CANVAS_PAD
+    },
+
+    canvasHeight() {
+      if (!this.flatNodes.length) return 400
+      return Math.max(...this.flatNodes.map(n => n.y + NODE_HEIGHT)) + CANVAS_PAD * 2
+    },
+
+    nodeWidth() {
+      return NODE_WIDTH
+    },
+    nodeIndent() {
+      return NODE_INDENT
     }
   },
 
-  onShow() {
-    if (this.currentFamily) {
-      this.loadTreeData()
-    }
-  },
-
-  onShareAppMessage() {
-    return {
-      title: '邀请加入' + (this.currentFamily && this.currentFamily.name || '家谱'),
-      path: '/pages/index/index?code=' + (this.currentFamily && this.currentFamily.code || '')
+  watch: {
+    currentFamily: {
+      immediate: true,
+      handler(newVal) {
+        if (newVal) {
+          this.loadTreeData()
+        }
+      }
     }
   },
 
   methods: {
-    onMovableChange(e) {
-      if (e.detail.source === 'drag') {
-        this.treeX = e.detail.x
-        this.treeY = e.detail.y
-      }
-    },
-
     goToIndex() {
       uni.switchTab({ url: '/pages/index/index' })
     },
@@ -241,32 +410,52 @@ export default {
         var res = await api.member.getTree(this.currentFamily.id)
         this.treeData = res || []
         
-        // 收集所有节点ID并设置为展开
+        // 初始化全部展开
         this.expandedIds = {}
-        const collectIds = (nodes) => {
-          nodes.forEach(node => {
-            this.$set(this.expandedIds, node.id, true)
-            if (node.children && node.children.length > 0) {
-              collectIds(node.children)
-            }
-          })
-        }
-        collectIds(this.treeData)
-        
-        var memberRes = await api.member.getList(this.currentFamily.id)
-        this.members = memberRes || []
+        this.collapsedMap = {}
       } catch (error) {
         console.error('加载树形数据失败', error)
       }
     },
 
-    toggleNode(nodeId) {
-      this.$set(this.expandedIds, nodeId, !this.expandedIds[nodeId])
+    copyCode() {
+      uni.setClipboardData({
+        data: this.currentFamily.code,
+        success: () => {
+          uni.showToast({ title: '邀请码已复制', icon: 'success' })
+        }
+      })
+    },
+
+    toggleCollapse(id) {
+      this.$set(this.collapsedMap, id, !this.collapsedMap[id])
+    },
+
+    expandAll() {
+      this.collapsedMap = {}
+    },
+
+    zoomIn() {
+      this.scale = Math.min(this.maxScale, +(this.scale + 0.1).toFixed(1))
+    },
+
+    zoomOut() {
+      this.scale = Math.max(this.minScale, +(this.scale - 0.1).toFixed(1))
+    },
+
+    resetView() {
+      this.scale = 1
+      this.scrollTop = 0
+      this.scrollLeft = 0
     },
 
     showMemberDetail(member) {
       this.selectedMember = member
       this.showDrawer = true
+    },
+
+    onMemberTap(node) {
+      this.showMemberDetail(node)
     },
 
     onTreeNodeClick(node) {
@@ -288,69 +477,77 @@ export default {
       this.showEditModal = true
     },
 
-    copyCode() {
-      uni.setClipboardData({
-        data: this.currentFamily.code,
-        success: function() {
-          uni.showToast({ title: '已复制邀请码', icon: 'success' })
-        }
+    goToMemberDetail() {
+      if (!this.selectedMember || !this.selectedMember.id) return
+      uni.navigateTo({
+        url: `/pages/member-detail/member-detail?id=${this.selectedMember.id}`
       })
+      this.showDrawer = false
     },
 
     async submitForm() {
-      if (!this.editForm.name.trim()) {
-        uni.showToast({ title: '姓名不能为空', icon: 'none' })
+      if (!this.editForm.name) {
+        uni.showToast({ title: '请输入姓名', icon: 'none' })
         return
       }
 
       try {
-        uni.showLoading({ title: '提交中...' })
-        
-        if (this.formType === 'edit-member') {
-          const changes = {
-            name: { oldValue: this.selectedMember.name, newValue: this.editForm.name }
-          }
-          await api.member.applyEdit(this.currentFamily.id, this.selectedMember.id, { changes })
-        } else if (this.formType === 'add-child') {
-          await api.member.addChild(this.currentFamily.id, this.selectedMember.id, {
-            name: this.editForm.name,
-            gender: this.editForm.gender
-          })
+        if (this.formType === 'add-child') {
+          await api.member.addChild(this.currentFamily.id, this.selectedMember.id, this.editForm)
+          uni.showToast({ title: '已提交申请', icon: 'success' })
         } else if (this.formType === 'add-parent') {
-          await api.member.addParent(this.currentFamily.id, this.selectedMember.id, {
-            name: this.editForm.name,
-            gender: this.editForm.gender
-          })
+          await api.member.addParent(this.currentFamily.id, this.selectedMember.id, this.editForm)
+          uni.showToast({ title: '已提交申请', icon: 'success' })
+        } else if (this.formType === 'edit-member') {
+          await api.member.update(this.currentFamily.id, this.selectedMember.id, this.editForm)
+          uni.showToast({ title: '已提交修改申请', icon: 'success' })
         }
-        
-        uni.hideLoading()
-        uni.showToast({ title: '申请已提交，待审批', icon: 'success' })
-        this.closeAllModals()
+        this.showEditModal = false
+        this.loadTreeData()
       } catch (error) {
-        uni.hideLoading()
+        uni.showToast({ title: error.message || '操作失败', icon: 'none' })
       }
     },
 
-    goToMemberDetail() {
-      uni.navigateTo({
-        url: `/pages/member-detail/member-detail?id=${this.selectedMember.id}`
-      })
+    onLoad(options) {
+      if (this.currentFamily) {
+        this.loadTreeData()
+      }
+    },
+
+    onShow() {
+      if (this.currentFamily) {
+        this.loadTreeData()
+      }
+    },
+
+    onShareAppMessage() {
+      return {
+        title: '慎终追远 - ' + (this.currentFamily ? this.currentFamily.name : '家谱'),
+        path: '/pages/index/index?code=' + (this.currentFamily && this.currentFamily.code || '')
+      }
     }
   }
 }
 </script>
 
-<style scoped>
-.jpu-page-container {
+<style lang="scss">
+/* 主题色变量 */
+page {
+  --theme-primary: #8E292C;
+  --theme-primary-light: #A63A3D;
   --theme-bg: #F2ECE4;
   --theme-card: #FBF9F6;
-  --theme-text: #3E2A23;
-  --theme-primary: #8E292C;
   --theme-border: #D4C9BD;
-  
+  --theme-text: #3E2A23;
+  --theme-text-secondary: #8D6E63;
+}
+
+/* 容器 */
+.jpu-page-container {
   min-height: 100vh;
   background-color: var(--theme-bg);
-  padding: 32rpx;
+  padding: 24rpx;
 }
 
 /* 空状态 */
@@ -359,12 +556,12 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 160rpx 64rpx;
+  height: 60vh;
 }
 
 .jpu-empty-icon-wrap {
-  width: 160rpx;
-  height: 160rpx;
+  width: 140rpx;
+  height: 140rpx;
   border-radius: 16rpx;
   background-color: var(--theme-primary);
   display: flex;
@@ -375,7 +572,7 @@ export default {
 }
 
 .jpu-empty-icon-text {
-  font-size: 72rpx;
+  font-size: 64rpx;
   color: #FFFFFF;
   font-weight: bold;
   letter-spacing: 8rpx;
@@ -384,117 +581,328 @@ export default {
 .jpu-empty-text {
   font-size: 28rpx;
   color: #8D6E63;
-  margin-bottom: 48rpx;
+  letter-spacing: 4rpx;
 }
 
 .jpu-empty-btn {
+  margin-top: 32rpx;
+  padding: 16rpx 48rpx;
   background-color: var(--theme-primary);
+  border-radius: 8rpx;
+}
+
+.jpu-empty-btn text {
   color: #FFFFFF;
   font-size: 28rpx;
-  font-weight: bold;
-  letter-spacing: 4rpx;
-  padding: 24rpx 48rpx;
-  border-radius: 12rpx;
 }
 
-/* Section标题 */
-.jpu-section-title {
+/* 邀请卡 */
+.jpu-invite-card {
   display: flex;
   align-items: center;
-  font-size: 28rpx;
-  font-weight: bold;
-  color: #6D4C41;
-  margin-bottom: 24rpx;
-  margin-left: 8rpx;
-}
-
-.jpu-section-line {
-  width: 8rpx;
-  height: 28rpx;
-  background-color: var(--theme-primary);
-  margin-right: 16rpx;
-  border-radius: 4rpx;
-}
-
-/* 邀请码卡片 */
-.jpu-invite-card {
+  justify-content: space-between;
   background-color: var(--theme-card);
   border: 2rpx solid var(--theme-border);
-  border-radius: 12rpx;
-  padding: 32rpx;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 32rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+  border-radius: 16rpx;
+  padding: 24rpx 32rpx;
+  margin-bottom: 24rpx;
 }
 
 .jpu-invite-label {
   font-size: 24rpx;
   color: #8D6E63;
-  margin-bottom: 8rpx;
   display: block;
+  margin-bottom: 8rpx;
 }
 
 .jpu-invite-code {
-  font-family: monospace;
   font-size: 40rpx;
-  font-weight: bold;
-  letter-spacing: 12rpx;
   color: var(--theme-primary);
+  font-weight: bold;
+  letter-spacing: 8rpx;
 }
 
 .jpu-copy-btn {
-  background-color: #F9EBEA;
-  border: 2rpx solid #E6B0AA;
+  padding: 12rpx 24rpx;
+  background-color: var(--theme-primary);
   border-radius: 8rpx;
-  padding: 16rpx 24rpx;
-}
-
-.jpu-copy-btn:active {
-  background-color: #F2D7D5;
 }
 
 .jpu-copy-btn-text {
+  color: #FFFFFF;
   font-size: 24rpx;
-  font-weight: bold;
-  color: var(--theme-primary);
 }
 
-/* 遮罩层 */
+/* 标题 */
+.jpu-section-title {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24rpx;
+}
+
+.jpu-section-line {
+  width: 8rpx;
+  height: 32rpx;
+  background-color: var(--theme-primary);
+  border-radius: 4rpx;
+  margin-right: 16rpx;
+}
+
+.jpu-section-title text {
+  font-size: 32rpx;
+  color: var(--theme-text);
+  font-weight: bold;
+  letter-spacing: 4rpx;
+}
+
+/* ==================== 家谱树容器 ==================== */
+.family-tree-container {
+  display: flex;
+  flex-direction: column;
+  height: 55vh;
+  background: var(--theme-card);
+  border: 2rpx solid var(--theme-border);
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+
+/* 工具栏 */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #fff;
+  border-bottom: 1rpx solid #eee;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: #f5f0eb;
+  border-radius: 20px;
+}
+
+.toolbar-btn:active {
+  opacity: 0.7;
+}
+
+.toolbar-icon {
+  font-size: 20px;
+  color: #c0392b;
+  line-height: 1;
+}
+
+.toolbar-text {
+  font-size: 12px;
+  color: #555;
+}
+
+.scale-display {
+  padding: 0 8px;
+  font-size: 13px;
+  color: #888;
+  min-width: 44px;
+  text-align: center;
+}
+
+/* 画布滚动区 */
+.canvas-scroll {
+  flex: 1;
+  width: 100%;
+  overflow: hidden;
+}
+
+.canvas {
+  position: relative;
+  will-change: transform;
+}
+
+/* 连接线 */
+.lines-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.connect-line {
+  position: absolute;
+  background: #d4b8a8;
+}
+
+.connect-line.vertical {
+  width: 2px;
+}
+
+.connect-line.horizontal {
+  height: 2px;
+}
+
+/* 节点外层 */
+.node-wrapper {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 折叠按钮 */
+.collapse-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #c0392b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(192, 57, 43, 0.35);
+  z-index: 2;
+}
+
+.collapse-btn text {
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.collapse-btn.collapsed {
+  background: #e8826e;
+}
+
+/* 成员卡片 */
+.member-card {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1.5px solid transparent;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+}
+
+.member-card:active {
+  transform: scale(0.97);
+}
+
+.card-male {
+  background: #fff;
+  border-color: #d6e8f7;
+}
+
+.card-female {
+  background: #fff5f7;
+  border-color: #f7d6de;
+}
+
+.card-self {
+  border-color: #c0392b !important;
+  box-shadow: 0 2px 14px rgba(192,57,43,0.18) !important;
+}
+
+/* 性别徽章 */
+.gender-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.gender-badge text {
+  font-size: 13px;
+  color: #fff;
+  font-weight: 600;
+}
+
+.badge-male   { background: #5b9bd5; }
+.badge-female { background: #e87fa3; }
+
+/* 卡片右侧 */
+.card-right {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.member-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2c2c2c;
+}
+
+.self-tag {
+  background: #c0392b;
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.self-tag text {
+  font-size: 11px;
+  color: #fff;
+}
+
+.gen-badge {
+  background: #fff0ee;
+  border-radius: 6px;
+  padding: 2px 8px;
+  display: inline-flex;
+  align-self: flex-start;
+}
+
+.gen-badge text {
+  font-size: 11px;
+  color: #c0392b;
+}
+
+/* 弹层 */
 .jpu-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.6);
-  z-index: 50;
+  background: rgba(0, 0, 0, 0.5);
   opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
+  visibility: hidden;
+  transition: all 0.3s;
+  z-index: 100;
 }
 
 .jpu-modal-overlay.jpu-open {
   opacity: 1;
-  pointer-events: auto;
+  visibility: visible;
 }
 
-/* 底部抽屉 */
 .jpu-drawer {
   position: fixed;
-  bottom: 0;
   left: 0;
   right: 0;
-  background-color: var(--theme-bg);
-  border-radius: 32rpx 32rpx 0 0;
-  padding: 0 32rpx;
-  padding-bottom: constant(safe-area-inset-bottom);
-  padding-bottom: env(safe-area-inset-bottom);
-  z-index: 60;
+  bottom: 0;
+  background: var(--theme-card);
+  border-radius: 24rpx 24rpx 0 0;
   transform: translateY(100%);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 -8rpx 32rpx rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s;
+  z-index: 200;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .jpu-drawer.jpu-open {
@@ -502,23 +910,22 @@ export default {
 }
 
 .jpu-drawer-handle {
-  width: 96rpx;
+  width: 72rpx;
   height: 8rpx;
-  background-color: var(--theme-border);
+  background: #D4C9BD;
   border-radius: 4rpx;
-  margin: 24rpx auto;
+  margin: 16rpx auto;
 }
 
 .jpu-drawer-header {
-  text-align: center;
-  margin-bottom: 32rpx;
+  padding: 0 32rpx 24rpx;
+  border-bottom: 1rpx solid var(--theme-border);
 }
 
 .jpu-drawer-title {
-  font-size: 40rpx;
+  font-size: 36rpx;
   font-weight: bold;
   color: var(--theme-text);
-  letter-spacing: 6rpx;
   display: block;
 }
 
@@ -530,465 +937,209 @@ export default {
 }
 
 .jpu-drawer-actions {
-  padding-bottom: 32rpx;
+  padding: 24rpx 32rpx;
 }
 
 .jpu-drawer-btn {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 28rpx 48rpx;
-  border-radius: 8rpx;
-  margin-bottom: 20rpx;
+  justify-content: space-between;
+  padding: 24rpx;
+  border-radius: 12rpx;
+  margin-bottom: 16rpx;
 }
 
-.jpu-drawer-btn:last-child {
-  margin-bottom: 0;
+.jpu-btn-outline {
+  background: var(--theme-card);
+  border: 2rpx solid var(--theme-border);
+}
+
+.jpu-btn-outline text {
+  color: var(--theme-text);
+}
+
+.jpu-btn-danger {
+  background: #FDF2F1;
+  border: 2rpx solid #E6B0AA;
+}
+
+.jpu-btn-danger text {
+  color: var(--theme-primary);
 }
 
 .jpu-drawer-btn-text {
   font-size: 28rpx;
-  font-weight: bold;
-  letter-spacing: 4rpx;
 }
 
 .jpu-drawer-btn-arrow {
-  font-size: 28rpx;
+  color: #8D6E63;
+  font-size: 32rpx;
 }
 
-.jpu-btn-outline {
-  background-color: var(--theme-card);
-  border: 2rpx solid var(--theme-border);
-}
-
-.jpu-btn-outline .jpu-drawer-btn-text,
-.jpu-btn-outline .jpu-drawer-btn-arrow {
-  color: var(--theme-text);
-}
-
-.jpu-btn-outline .jpu-drawer-btn-arrow {
-  color: var(--theme-border);
-}
-
-.jpu-btn-danger {
-  background-color: #F5EBE9;
-  border: 2rpx solid #E6B0AA;
-}
-
-.jpu-btn-danger .jpu-drawer-btn-text,
-.jpu-btn-danger .jpu-drawer-btn-arrow {
-  color: var(--theme-primary);
-}
-
-.jpu-btn-danger .jpu-drawer-btn-arrow {
-  color: #E6B0AA;
-}
-
-/* 居中模态框 */
-.jpu-modal-center {
+/* Modal */
+.jpu-modal {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 85%;
-  max-width: 600rpx;
-  background-color: var(--theme-card);
-  border: 2rpx solid var(--theme-border);
-  border-radius: 16rpx;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s;
+  z-index: 300;
+}
+
+.jpu-modal.jpu-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.jpu-modal-content {
+  width: 600rpx;
+  background: var(--theme-card);
+  border-radius: 24rpx;
   overflow: hidden;
-  z-index: 60;
-  box-shadow: 0 16rpx 48rpx rgba(0, 0, 0, 0.2);
 }
 
 .jpu-modal-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 32rpx;
-  background-color: var(--theme-bg);
-  border-bottom: 2rpx solid var(--theme-border);
+  justify-content: space-between;
+  padding: 24rpx 32rpx;
+  border-bottom: 1rpx solid var(--theme-border);
 }
 
 .jpu-modal-title {
-  font-size: 34rpx;
+  font-size: 32rpx;
   font-weight: bold;
-  color: var(--theme-text);
-  letter-spacing: 6rpx;
 }
 
 .jpu-modal-close {
   font-size: 48rpx;
   color: #8D6E63;
-  line-height: 1;
 }
 
 .jpu-modal-body {
-  padding: 32rpx;
+  padding: 48rpx;
+  text-align: center;
 }
 
-.jpu-modal-footer {
-  display: flex;
-  padding: 24rpx 32rpx 32rpx;
-  gap: 24rpx;
+.jpu-qrcode-wrap {
+  width: 400rpx;
+  height: 400rpx;
+  margin: 0 auto 32rpx;
+  background: #f5f5f5;
 }
 
-/* 表单 */
-.jpu-form-group {
-  margin-bottom: 32rpx;
+.jpu-qrcode {
+  width: 100%;
+  height: 100%;
+}
+
+.jpu-code-display {
+  text-align: center;
+}
+
+.jpu-code-label {
+  font-size: 24rpx;
+  color: #8D6E63;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.jpu-code-value {
+  font-size: 48rpx;
+  color: var(--theme-primary);
+  font-weight: bold;
+  letter-spacing: 8rpx;
+}
+
+/* 表单样式 */
+.jpu-form-item {
+  margin-bottom: 24rpx;
 }
 
 .jpu-form-label {
-  display: block;
   font-size: 28rpx;
   color: var(--theme-text);
+  display: block;
   margin-bottom: 12rpx;
-  font-weight: bold;
 }
 
 .jpu-form-input {
   width: 100%;
-  height: 88rpx;
-  background-color: var(--theme-bg);
-  border: 2rpx solid var(--theme-border);
-  border-radius: 8rpx;
+  height: 80rpx;
+  background: #f5f5f5;
+  border-radius: 12rpx;
   padding: 0 24rpx;
   font-size: 28rpx;
-  color: var(--theme-text);
   box-sizing: border-box;
-  font-family: 'Noto Serif SC', 'Songti SC', 'SimSun', STSong, serif;
 }
 
-.jpu-placeholder {
-  color: #9CA3AF;
-}
-
-.jpu-radio-group {
+.jpu-form-radio-group {
   display: flex;
-  gap: 48rpx;
+  gap: 24rpx;
 }
 
-.jpu-radio-item {
+.jpu-form-radio {
+  flex: 1;
+  height: 80rpx;
   display: flex;
   align-items: center;
-  gap: 12rpx;
+  justify-content: center;
+  background: #f5f5f5;
+  border-radius: 12rpx;
+  border: 2rpx solid transparent;
 }
 
-.jpu-radio {
-  accent-color: var(--theme-primary);
+.jpu-form-radio.active {
+  background: #fff;
+  border-color: var(--theme-primary);
 }
 
-.jpu-radio-text {
+.jpu-form-radio text {
   font-size: 28rpx;
   color: var(--theme-text);
 }
 
-/* 提示区 */
-.jpu-tip-warning {
-  background-color: #FFF8E1;
-  border: 2rpx solid #FFE082;
-  border-radius: 8rpx;
-  padding: 20rpx 24rpx;
-  font-size: 24rpx;
-  color: #8D6E63;
-  line-height: 1.6;
-}
-
-.jpu-tip-bold {
-  color: #F57F17;
-  font-weight: bold;
-}
-
-/* 按钮 */
-.jpu-btn-gray {
-  flex: 1;
-  background-color: var(--theme-bg);
-  border: 2rpx solid var(--theme-border);
-  border-radius: 12rpx;
-  padding: 24rpx;
-  text-align: center;
-}
-
-.jpu-btn-gray text {
-  font-size: 28rpx;
-  font-weight: bold;
-  letter-spacing: 4rpx;
-  color: var(--theme-text);
-}
-
-.jpu-btn-primary {
-  flex: 1;
-  background-color: var(--theme-primary);
-  border: 2rpx solid #722023;
-  border-radius: 12rpx;
-  padding: 24rpx;
-  text-align: center;
-  box-shadow: 0 4rpx 12rpx rgba(142, 41, 44, 0.2);
-}
-
-.jpu-btn-primary text {
-  font-size: 28rpx;
-  font-weight: bold;
-  letter-spacing: 4rpx;
-  color: #FFFFFF;
-}
-
-/* 二维码 */
-.jpu-qr-container {
-  display: flex;
-  justify-content: center;
-  padding: 32rpx 0;
-}
-
-.jpu-qr-image {
-  width: 320rpx;
-  height: 320rpx;
-  background-color: var(--theme-bg);
-  border-radius: 16rpx;
-}
-
-.jpu-code-display {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24rpx;
-  background-color: var(--theme-bg);
-  border: 2rpx solid var(--theme-border);
-  border-radius: 12rpx;
-}
-
-.jpu-code-label {
-  font-size: 28rpx;
-  color: #8D6E63;
-  margin-right: 16rpx;
-}
-
-.jpu-code-value {
-  font-family: monospace;
-  font-size: 40rpx;
-  font-weight: bold;
-  letter-spacing: 8rpx;
+.jpu-form-radio.active text {
   color: var(--theme-primary);
+  font-weight: bold;
 }
 
-/* 家谱树滚动 */
-.jpu-tree-scroll {
-  width: 100%;
-  height: 60vh;
-  overflow: hidden;
-}
-
-.jpu-movable-area {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-.jpu-movable-view {
-  width: max-content;
-  height: max-content;
-  min-width: 100vw;
-  min-height: 100%;
+.jpu-form-btn-group {
   display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
+  gap: 24rpx;
+  margin-top: 32rpx;
 }
 
-.jpu-tree-card {
-
-.jpu-tree-scroll::-webkit-scrollbar {
-  height: 8rpx;
-}
-
-.jpu-tree-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.jpu-tree-scroll::-webkit-scrollbar-thumb {
-  background: var(--theme-border);
-  border-radius: 4rpx;
-}
-
-.jpu-tree-card {
-  background-color: var(--theme-card);
-  border: 2rpx solid var(--theme-border);
-  border-radius: 16rpx;
-  padding: 32rpx;
-  min-width: max-content;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
-}
-
-.jpu-tree-container {
-  min-width: max-content;
-}
-
-/* 树节点样式 - 参考文档风格 */
-.tree-node-wrapper {
-  position: relative;
-}
-
-.tree-node-item {
-  position: relative;
-  margin-top: 24rpx;
-}
-
-.tree-node-item:first-child {
-  margin-top: 0;
-}
-
-.node-container {
-  display: flex;
-  align-items: center;
-  position: relative;
-}
-
-.toggle-btn {
-  position: absolute;
-  left: -44rpx;
-  width: 36rpx;
-  height: 36rpx;
+.jpu-form-btn {
+  flex: 1;
+  height: 88rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6rpx;
-  font-size: 24rpx;
-  font-weight: bold;
-  z-index: 10;
-  box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
-  background-color: #FBF9F6;
-  border: 1rpx solid #D4C9BD;
-}
-
-.toggle-btn text {
-  color: #8E292C;
-}
-
-.member-card {
-  display: flex;
-  align-items: center;
-  padding: 20rpx 24rpx;
   border-radius: 12rpx;
-  position: relative;
-  margin-left: 16rpx;
-  min-width: 280rpx;
-  box-shadow: 0 4rpx 12rpx rgba(62, 42, 35, 0.08);
-}
-
-.member-card.is-me {
-  background: linear-gradient(145deg, #FFF8F0 0%, #FEF3E2 100%);
-  border: 2rpx solid #E6B0AA;
-}
-
-.member-card:not(.is-me) {
-  background: linear-gradient(145deg, #FFFFFF 0%, #FBF9F6 100%);
-  border: 2rpx solid #D4C9BD;
-}
-
-.gender-badge {
-  width: 48rpx;
-  height: 48rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4rpx;
-  margin-right: 20rpx;
-  font-size: 22rpx;
-  font-weight: bold;
-  flex-shrink: 0;
-  box-shadow: inset 0 1rpx 2rpx rgba(0, 0, 0, 0.1);
-}
-
-.gender-badge.male {
-  background: linear-gradient(145deg, #E3F2FD 0%, #BBDEFB 100%);
-  border: 1rpx solid #1565C0;
-  color: #1565C0;
-}
-
-.gender-badge.female {
-  background: linear-gradient(145deg, #FCE4EC 0%, #F8BBD9 100%);
-  border: 1rpx solid #C62828;
-  color: #C62828;
-}
-
-.member-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.member-name {
   font-size: 30rpx;
-  font-weight: bold;
-  color: #3E2A23;
-  letter-spacing: 2rpx;
 }
 
-.generation-tag {
-  display: inline-block;
-  margin-top: 6rpx;
+.jpu-form-btn-cancel {
+  background: #f5f5f5;
 }
 
-.generation-tag text {
-  font-size: 20rpx;
-  color: #8E292C;
-  background: #FDF2F1;
-  border: 1rpx solid #E6B0AA;
-  border-radius: 4rpx;
-  padding: 2rpx 10rpx;
+.jpu-form-btn-cancel text {
+  color: #666;
 }
 
-.current-user-badge {
-  position: absolute;
-  top: -10rpx;
-  right: -10rpx;
-  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
-  border: 3rpx solid #FFFFFF;
-  border-radius: 50%;
-  width: 36rpx;
-  height: 36rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18rpx;
+.jpu-form-btn-submit {
+  background: var(--theme-primary);
+}
+
+.jpu-form-btn-submit text {
   color: #fff;
-  box-shadow: 0 2rpx 8rpx rgba(59, 130, 246, 0.4);
-}
-
-.tree-children {
-  position: relative;
-  padding-left: 56rpx;
-  margin-left: 24rpx;
-}
-
-.tree-children::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 1rpx;
-  background: #D4C9BD;
-}
-
-.tree-children .tree-node-item::before {
-  content: '';
-  position: absolute;
-  top: 28rpx;
-  left: -56rpx;
-  width: 56rpx;
-  height: 1rpx;
-  background: #D4C9BD;
-}
-
-.tree-children .tree-node-item:last-child::before {
-  background: transparent;
-}
-
-.tree-children .tree-node-item:last-child::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 50%;
-  width: 1rpx;
-  background: #D4C9BD;
 }
 </style>

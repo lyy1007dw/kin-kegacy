@@ -181,6 +181,17 @@ export default {
     ...mapState(['currentFamily', 'userInfo'])
   },
 
+  watch: {
+    currentFamily: {
+      immediate: true,
+      handler(newVal) {
+        if (newVal && this.memberId) {
+          this.loadMemberDetail()
+        }
+      }
+    }
+  },
+
   onLoad(options) {
     if (options.id) {
       this.memberId = parseInt(options.id)

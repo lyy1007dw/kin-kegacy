@@ -34,6 +34,8 @@ public class EditRequest {
 
     private String changesJson;
 
+    private String requestType;
+
     private RequestStatusEnum status;
 
     private String rejectReason;

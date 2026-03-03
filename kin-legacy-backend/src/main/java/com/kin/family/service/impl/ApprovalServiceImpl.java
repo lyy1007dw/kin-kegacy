@@ -1,5 +1,6 @@
 package com.kin.family.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -164,6 +165,7 @@ public class ApprovalServiceImpl implements ApprovalService {
                         .birthPlace((String) memberInfo.get("birthPlace"))
                         .bio((String) memberInfo.get("bio"))
                         .isCreator(0)
+                        .createTime(LocalDateTime.now())
                         .build();
                 memberMapper.insert(child);
 
@@ -195,20 +197,55 @@ public class ApprovalServiceImpl implements ApprovalService {
                         .birthPlace((String) memberInfo.get("birthPlace"))
                         .bio((String) memberInfo.get("bio"))
                         .isCreator(0)
+                        .createTime(LocalDateTime.now())
                         .build();
                 memberMapper.insert(parent);
 
                 if (childId != null) {
+                    // 1. 找到目标成员的原父亲
+                    List<MemberRelation> oldParentRelations = relationMapper.selectList(
+                            new LambdaQueryWrapper<MemberRelation>()
+                                    .eq(MemberRelation::getToMemberId, childId)
+                                    .in(MemberRelation::getRelationType, 
+                                        RelationTypeEnum.FATHER_SON, RelationTypeEnum.MOTHER_SON)
+                    );
+
+                    Long oldParentId = null;
+                    if (!oldParentRelations.isEmpty()) {
+                        oldParentId = oldParentRelations.get(0).getFromMemberId();
+                        // 2. 删除原父亲与目标成员的关系
+                        for (MemberRelation oldRel : oldParentRelations) {
+                            relationMapper.deleteById(oldRel.getId());
+                        }
+                    }
+
+                    // 3. 建立新父亲 -> 目标成员的关系
                     RelationTypeEnum relationType = parent.getGender() == GenderEnum.MALE ?
                             RelationTypeEnum.FATHER_SON : RelationTypeEnum.MOTHER_SON;
 
-                    MemberRelation relation = MemberRelation.builder()
+                    MemberRelation newRelation = MemberRelation.builder()
                             .familyId(joinRequest.getFamilyId())
                             .fromMemberId(parent.getId())
                             .toMemberId(childId)
                             .relationType(relationType)
                             .build();
-                    relationMapper.insert(relation);
+                    relationMapper.insert(newRelation);
+
+                    // 4. 如果有原父亲，建立原父亲 -> 新父亲的关系
+                    if (oldParentId != null) {
+                        FamilyMember oldParent = memberMapper.selectById(oldParentId);
+                        if (oldParent != null) {
+                            RelationTypeEnum oldRelationType = oldParent.getGender() == GenderEnum.MALE ?
+                                    RelationTypeEnum.FATHER_SON : RelationTypeEnum.MOTHER_SON;
+                            MemberRelation oldToNewRelation = MemberRelation.builder()
+                                    .familyId(joinRequest.getFamilyId())
+                                    .fromMemberId(oldParentId)
+                                    .toMemberId(parent.getId())
+                                    .relationType(oldRelationType)
+                                    .build();
+                            relationMapper.insert(oldToNewRelation);
+                        }
+                    }
                 }
             }
         } catch (JsonProcessingException e) {
