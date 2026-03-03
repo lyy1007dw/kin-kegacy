@@ -41,3 +41,15 @@ mybatis-plus:
 logging:
   level:
     com.kin.family: debug
+
+file:
+  upload:
+    type: oss
+    allowed-types: jpg,jpeg,png,gif,webp
+    max-size: 5242880
+  oss:
+    endpoint: ${OSS_ENDPOINT:oss-cn-beijing.aliyuncs.com}
+    bucket-name: ${OSS_BUCKET_NAME:kin-legacy}
+    access-key-id: ${OSS_ACCESS_KEY_ID:}
+    access-key-secret: ${OSS_ACCESS_KEY_SECRET:}
+    url-prefix: https://${OSS_BUCKET_NAME:kin-legacy}.${OSS_ENDPOINT:oss-cn-beijing.aliyuncs.com}/

@@ -11,7 +11,9 @@ import lombok.Getter;
 @Getter
 public enum RelationTypeEnum {
     FATHER_SON("father_son", "父子"),
-    MOTHER_SON("mother_son", "母女"),
+    FATHER_DAUGHTER("father_daughter", "父女"),
+    MOTHER_SON("mother_son", "母子"),
+    MOTHER_DAUGHTER("mother_daughter", "母女"),
     HUSBAND_WIFE("husband_wife", "夫妻"),
     SIBLING("sibling", "兄弟姐妹");
 
