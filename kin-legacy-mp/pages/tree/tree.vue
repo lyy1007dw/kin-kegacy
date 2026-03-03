@@ -26,118 +26,28 @@
         <text>家族世系图</text>
       </view>
 
-      <!-- 家谱树容器 -->
+      <!-- 家谱树容器 - 支持拖动 -->
       <view class="jpu-tree-scroll" v-if="treeData.length > 0">
-        <view class="jpu-tree-card">
-          <view class="jpu-tree-container">
-            <block v-for="rootNode in treeData" :key="rootNode.id">
-              <view class="tree-node-wrapper">
-                <view class="tree-node-item">
-                  <view class="node-container">
-                    <view v-if="rootNode.children && rootNode.children.length > 0" class="toggle-btn" @click="toggleNode(rootNode.id)">
-                      <text>{{ expandedIds[rootNode.id] !== false ? '−' : '+' }}</text>
-                    </view>
-                    <view class="member-card" :class="{ 'is-me': rootNode.currentUser }" @click="onTreeNodeClick(rootNode)">
-                      <view class="gender-badge" :class="rootNode.gender">
-                        <text>{{ rootNode.gender === 'male' ? '男' : '女' }}</text>
-                      </view>
-                      <view class="member-info">
-                        <text class="member-name">{{ rootNode.name }}</text>
-                        <view class="generation-tag">
-                          <text>第 {{ rootNode.generation || 1 }} 世</text>
-                        </view>
-                      </view>
-                      <view v-if="rootNode.currentUser" class="current-user-badge">
-                        <text>{{ rootNode.currentUserLabel || '我' }}</text>
-                      </view>
-                    </view>
-                  </view>
-                </view>
-                <view v-if="rootNode.children && rootNode.children.length > 0 && expandedIds[rootNode.id] !== false" class="tree-children">
-                  <template v-for="child in rootNode.children" :key="child.id">
-                    <view class="tree-node-wrapper">
-                      <view class="tree-node-item">
-                        <view class="node-container">
-                          <view v-if="child.children && child.children.length > 0" class="toggle-btn" @click="toggleNode(child.id)">
-                            <text>{{ expandedIds[child.id] !== false ? '−' : '+' }}</text>
-                          </view>
-                          <view class="member-card" :class="{ 'is-me': child.currentUser }" @click="onTreeNodeClick(child)">
-                            <view class="gender-badge" :class="child.gender">
-                              <text>{{ child.gender === 'male' ? '男' : '女' }}</text>
-                            </view>
-                            <view class="member-info">
-                              <text class="member-name">{{ child.name }}</text>
-                              <view class="generation-tag">
-                                <text>第 {{ child.generation || 1 }} 世</text>
-                              </view>
-                            </view>
-                            <view v-if="child.currentUser" class="current-user-badge">
-                              <text>{{ child.currentUserLabel || '我' }}</text>
-                            </view>
-                          </view>
-                        </view>
-                      </view>
-                      <view v-if="child.children && child.children.length > 0 && expandedIds[child.id] !== false" class="tree-children">
-                        <template v-for="grandchild in child.children" :key="grandchild.id">
-                          <view class="tree-node-wrapper">
-                            <view class="tree-node-item">
-                              <view class="node-container">
-                                <view v-if="grandchild.children && grandchild.children.length > 0" class="toggle-btn" @click="toggleNode(grandchild.id)">
-                                  <text>{{ expandedIds[grandchild.id] !== false ? '−' : '+' }}</text>
-                                </view>
-                                  <view class="member-card" :class="{ 'is-me': grandchild.currentUser }" @click="onTreeNodeClick(grandchild)">
-                                    <view class="gender-badge" :class="grandchild.gender">
-                                      <text>{{ grandchild.gender === 'male' ? '男' : '女' }}</text>
-                                    </view>
-                                    <view class="member-info">
-                                      <text class="member-name">{{ grandchild.name }}</text>
-                                      <view class="generation-tag">
-                                        <text>第 {{ grandchild.generation || 1 }} 世</text>
-                                      </view>
-                                    </view>
-                                    <view v-if="grandchild.currentUser" class="current-user-badge">
-                                      <text>{{ grandchild.currentUserLabel || '我' }}</text>
-                                    </view>
-                                  </view>
-                              </view>
-                            </view>
-                            <view v-if="grandchild.children && grandchild.children.length > 0 && expandedIds[grandchild.id] !== false" class="tree-children">
-                              <template v-for="g4 in grandchild.children" :key="g4.id">
-                                <view class="tree-node-wrapper">
-                                  <view class="tree-node-item">
-                                    <view class="node-container">
-                                      <view v-if="g4.children && g4.children.length > 0" class="toggle-btn" @click="toggleNode(g4.id)">
-                                        <text>{{ expandedIds[g4.id] !== false ? '−' : '+' }}</text>
-                                      </view>
-                                      <view class="member-card" :class="{ 'is-me': g4.currentUser }" @click="onTreeNodeClick(g4)">
-                                        <view class="gender-badge" :class="g4.gender">
-                                          <text>{{ g4.gender === 'male' ? '男' : '女' }}</text>
-                                        </view>
-                                        <view class="member-info">
-                                          <text class="member-name">{{ g4.name }}</text>
-                                          <view class="generation-tag">
-                                            <text>第 {{ g4.generation || 1 }} 世</text>
-                                          </view>
-                                        </view>
-                                        <view v-if="g4.currentUser" class="current-user-badge">
-                                          <text>{{ g4.currentUserLabel || '我' }}</text>
-                                        </view>
-                                      </view>
-                                    </view>
-                                  </view>
-                                </view>
-                              </template>
-                            </view>
-                          </view>
-                        </template>
-                      </view>
-                    </view>
-                  </template>
-                </view>
+        <movable-area class="jpu-movable-area">
+          <movable-view 
+            class="jpu-movable-view" 
+            direction="all" 
+            :x="treeX" 
+            :y="treeY"
+            @change="onMovableChange"
+          >
+            <view class="jpu-tree-card">
+              <view class="jpu-tree-container">
+                <block v-for="rootNode in treeData" :key="rootNode.id">
+                  <TreeNode 
+                    :node="rootNode" 
+                    @click="onTreeNodeClick"
+                  />
+                </block>
               </view>
-            </block>
-          </view>
-        </view>
+            </view>
+          </movable-view>
+        </movable-area>
       </view>
 
       <view v-else class="jpu-empty-state">
@@ -257,8 +167,12 @@
 <script>
 import { mapState } from 'vuex'
 import api from '../../utils/api'
+import TreeNode from '../../components/TreeNode.vue'
 
 export default {
+  components: {
+    TreeNode
+  },
   data() {
     return {
       showInviteModal: false,
@@ -269,6 +183,8 @@ export default {
       expandedIds: {},
       selectedMember: {},
       formType: '',
+      treeX: 0,
+      treeY: 0,
       editForm: {
         name: '',
         gender: 'male'
@@ -307,6 +223,13 @@ export default {
   },
 
   methods: {
+    onMovableChange(e) {
+      if (e.detail.source === 'drag') {
+        this.treeX = e.detail.x
+        this.treeY = e.detail.y
+      }
+    },
+
     goToIndex() {
       uni.switchTab({ url: '/pages/index/index' })
     },
@@ -847,9 +770,28 @@ export default {
 
 /* 家谱树滚动 */
 .jpu-tree-scroll {
-  overflow-x: auto;
-  overflow-y: visible;
+  width: 100%;
+  height: 60vh;
+  overflow: hidden;
 }
+
+.jpu-movable-area {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.jpu-movable-view {
+  width: max-content;
+  height: max-content;
+  min-width: 100vw;
+  min-height: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.jpu-tree-card {
 
 .jpu-tree-scroll::-webkit-scrollbar {
   height: 8rpx;

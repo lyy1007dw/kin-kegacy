@@ -1,51 +1,30 @@
 <template>
-  <view class="jpu-tree-node-wrapper">
-    <view class="jpu-node-row">
-      <view 
-        v-if="hasChildren" 
-        class="jpu-tree-toggle"
-        @click.stop="toggleExpand"
-      >
-        <text class="jpu-toggle-text">{{ expanded ? '−' : '+' }}</text>
-      </view>
-      
-      <view 
-        class="jpu-member-card"
-        :class="cardClass"
-        @click="handleClick"
-      >
-        <view class="jpu-gender-tag" :class="genderClass">
-          <text class="jpu-gender-text">{{ genderText }}</text>
+  <view class="tree-node-wrapper">
+    <view class="tree-node-item">
+      <view class="node-container">
+        <view v-if="node.children && node.children.length > 0" class="toggle-btn" @click="toggleNode">
+          <text>{{ expanded ? '−' : '+' }}</text>
         </view>
-        
-        <view class="jpu-member-info">
-          <text class="jpu-member-name">{{ node.name }}</text>
-          <text class="jpu-member-generation">第 {{ node.generation || 1 }} 世</text>
-        </view>
-        
-        <view v-if="node.currentUser" class="jpu-me-tag">
-          <text class="jpu-me-text">{{ node.currentUserLabel || '我' }}</text>
+        <view class="member-card" :class="{ 'is-me': node.currentUser }" @click="onClick">
+          <view class="gender-badge" :class="node.gender">
+            <text>{{ node.gender === 'male' ? '男' : '女' }}</text>
+          </view>
+          <view class="member-info">
+            <text class="member-name">{{ node.name }}</text>
+            <view class="generation-tag">
+              <text>第 {{ node.generation || 1 }} 世</text>
+            </view>
+          </view>
+          <view v-if="node.currentUser" class="current-user-badge">
+            <text>{{ node.currentUserLabel || '我' }}</text>
+          </view>
         </view>
       </view>
     </view>
-    
-    <view 
-      v-if="hasChildren" 
-      class="jpu-tree-children"
-      :class="{ 'jpu-hidden': !expanded }"
-    >
-      <view 
-        class="jpu-tree-node-item"
-        v-for="child in node.children"
-        :key="child.id"
-      >
-        <TreeNode 
-          :node="child" 
-          :currentUserId="currentUserId"
-          :defaultExpanded="defaultExpanded"
-          @click="handleChildClick"
-        />
-      </view>
+    <view v-if="node.children && node.children.length > 0 && expanded" class="tree-children">
+      <template v-for="child in node.children" :key="child.id">
+        <TreeNode :node="child" @click="$emit('nodeClick', $event)" />
+      </template>
     </view>
   </view>
 </template>
@@ -57,14 +36,6 @@ export default {
     node: {
       type: Object,
       required: true
-    },
-    currentUserId: {
-      type: [Number, String],
-      default: null
-    },
-    defaultExpanded: {
-      type: Boolean,
-      default: true
     }
   },
   data() {
@@ -73,232 +44,171 @@ export default {
     }
   },
   created() {
-    this.expanded = this.defaultExpanded
-  },
-  computed: {
-    isCurrentUser() {
-      return this.node.userId === this.currentUserId
-    },
-    genderText() {
-      return this.node.gender === 'male' ? '男' : '女'
-    },
-    genderClass() {
-      return this.node.gender === 'male' ? 'jpu-gender-male' : 'jpu-gender-female'
-    },
-    hasChildren() {
-      return this.node.children && this.node.children.length > 0
-    },
-    cardClass() {
-      var classes = []
-      if (this.node.isCreator) classes.push('jpu-card-creator')
-      if (this.node.currentUser) classes.push('jpu-card-me')
-      return classes.join(' ')
+    const app = getApp()
+    if (app && app.globalData && app.globalData.expandedIds) {
+      this.expanded = app.globalData.expandedIds[this.node.id] !== false
     }
   },
   methods: {
-    toggleExpand() {
+    toggleNode() {
       this.expanded = !this.expanded
+      const app = getApp()
+      if (app && app.globalData) {
+        if (!app.globalData.expandedIds) {
+          app.globalData.expandedIds = {}
+        }
+        app.globalData.expandedIds[this.node.id] = this.expanded
+      }
+      this.$emit('toggle', this.node.id, this.expanded)
     },
-    handleClick() {
-      this.$emit('nodeclick', this.node)
-    },
-    handleChildClick(child) {
-      this.$emit('nodeclick', child)
+    onClick() {
+      this.$emit('click', this.node)
     }
   }
 }
 </script>
 
 <style scoped>
-.jpu-tree-node-wrapper {
-  --theme-bg: #F2ECE4;
-  --theme-card: #FBF9F6;
-  --theme-text: #3E2A23;
-  --theme-primary: #8E292C;
-  --theme-border: #D4C9BD;
-  
-  position: relative;
+.tree-node-wrapper {
+  display: flex;
+  flex-direction: column;
 }
 
-.jpu-node-row {
-  position: relative;
-  display: inline-flex;
+.tree-node-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.node-container {
+  display: flex;
   align-items: center;
 }
 
-.jpu-tree-toggle {
-  position: absolute;
-  left: -20rpx;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 40rpx;
-  height: 40rpx;
-  background-color: var(--theme-card);
-  border: 2rpx solid var(--theme-border);
-  border-radius: 4rpx;
+.toggle-btn {
+  width: 32rpx;
+  height: 32rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 20;
-  box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
-}
-
-.jpu-tree-toggle:active {
-  background-color: var(--theme-bg);
-}
-
-.jpu-toggle-text {
-  font-size: 28rpx;
+  margin-right: 8rpx;
+  border-radius: 6rpx;
+  font-size: 24rpx;
   font-weight: bold;
-  color: var(--theme-primary);
-  line-height: 1;
-}
-
-.jpu-member-card {
-  display: inline-flex;
-  align-items: center;
-  background-color: var(--theme-card);
-  border: 2rpx solid var(--theme-border);
-  border-radius: 8rpx;
-  padding: 20rpx 24rpx;
-  box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.08);
-  position: relative;
   z-index: 10;
-  margin-left: 32rpx;
+  box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
+  background-color: var(--theme-card);
+  border: 1rpx solid #D4C9BD;
 }
 
-.jpu-member-card:active {
-  transform: scale(0.98);
+.toggle-btn text {
+  color: #8E292C;
 }
 
-.jpu-card-creator {
-  background: linear-gradient(180deg, #FFFBF5 0%, var(--theme-card) 100%);
-  border-color: var(--theme-primary);
+.member-card {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 24rpx;
+  border-radius: 12rpx;
+  position: relative;
+  margin-left: 16rpx;
+  min-width: 280rpx;
+  box-shadow: 0 4rpx 12rpx rgba(62, 42, 35, 0.08);
 }
 
-.jpu-card-me {
-  border-width: 3rpx;
-  border-color: #3B82F6;
-  box-shadow: 0 4rpx 12rpx rgba(59, 130, 246, 0.2);
+.member-card.is-me {
+  background: linear-gradient(145deg, #FFF8F0 0%, #FEF3E2 100%);
+  border: 2rpx solid #E6B0AA;
 }
 
-.jpu-gender-tag {
-  width: 56rpx;
-  height: 56rpx;
+.member-card:not(.is-me) {
+  background: linear-gradient(145deg, #FFFFFF 0%, #FBF9F6 100%);
+  border: 2rpx solid #D4C9BD;
+}
+
+.gender-badge {
+  width: 48rpx;
+  height: 48rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 4rpx;
   margin-right: 20rpx;
+  font-size: 22rpx;
+  font-weight: bold;
   flex-shrink: 0;
 }
 
-.jpu-gender-male {
-  background-color: #EAF2FF;
+.gender-badge.male {
+  background-color: #E3F2FD;
+  color: #1565C0;
   border: 2rpx solid #1565C0;
 }
 
-.jpu-gender-female {
+.gender-badge.female {
   background-color: #FDF2F1;
+  color: var(--theme-primary);
   border: 2rpx solid var(--theme-primary);
 }
 
-.jpu-gender-text {
-  font-size: 24rpx;
+.member-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.member-name {
+  font-size: 28rpx;
   font-weight: bold;
+  color: #3E2A23;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.jpu-gender-male .jpu-gender-text {
-  color: #1565C0;
+.generation-tag {
+  display: inline-block;
+  margin-top: 6rpx;
 }
 
-.jpu-gender-female .jpu-gender-text {
-  color: var(--theme-primary);
-}
-
-.jpu-member-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.jpu-member-name {
-  font-size: 30rpx;
-  font-weight: bold;
-  color: var(--theme-text);
-  letter-spacing: 6rpx;
-}
-
-.jpu-member-generation {
+.generation-tag text {
   font-size: 20rpx;
-  color: var(--theme-primary);
-  background-color: #FDF2F1;
+  color: #8E292C;
+  background: #FDF2F1;
   border: 1rpx solid #E6B0AA;
   border-radius: 4rpx;
-  padding: 2rpx 8rpx;
-  margin-top: 6rpx;
-  display: inline-block;
-  width: fit-content;
+  padding: 2rpx 10rpx;
 }
 
-.jpu-me-tag {
+.current-user-badge {
   position: absolute;
-  top: -12rpx;
-  right: -12rpx;
-  background-color: #3B82F6;
-  border: 3rpx solid var(--theme-card);
+  top: -10rpx;
+  right: -10rpx;
+  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+  border: 3rpx solid #FFFFFF;
   border-radius: 50%;
-  width: 40rpx;
-  height: 40rpx;
+  width: 36rpx;
+  height: 36rpx;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 18rpx;
+  color: #fff;
+  box-shadow: 0 2rpx 8rpx rgba(59, 130, 246, 0.4);
 }
 
-.jpu-me-text {
-  font-size: 20rpx;
-  font-weight: bold;
-  color: #FFFFFF;
-}
-
-.jpu-tree-children {
+.tree-children {
   position: relative;
   padding-left: 56rpx;
   margin-left: 24rpx;
-  margin-top: 32rpx;
 }
 
-.jpu-tree-children::before {
+.tree-children::before {
   content: '';
   position: absolute;
+  left: 20rpx;
   top: 0;
-  bottom: 0;
-  left: 0;
-  border-left: 2rpx solid var(--theme-border);
-}
-
-.jpu-tree-node-item {
-  position: relative;
-  margin-top: 32rpx;
-}
-
-.jpu-tree-node-item:first-child {
-  margin-top: 0;
-}
-
-.jpu-tree-node-item::before {
-  content: '';
-  position: absolute;
-  top: 44rpx;
-  left: -56rpx;
-  width: 56rpx;
-  border-top: 2rpx solid var(--theme-border);
-}
-
-.jpu-tree-node-item:last-child > .jpu-tree-children::before {
-  display: none;
-}
-
-.jpu-hidden {
-  display: none;
+  bottom: 24rpx;
+  width: 2rpx;
+  background: #D4C9BD;
 }
 </style>
