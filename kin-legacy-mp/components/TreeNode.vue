@@ -23,7 +23,7 @@
     </view>
     <view v-if="node.children && node.children.length > 0 && expanded" class="tree-children">
       <template v-for="child in node.children" :key="child.id">
-        <TreeNode :node="child" @click="$emit('nodeClick', $event)" />
+        <TreeNode :node="child" @click="$emit('click', $event)" />
       </template>
     </view>
   </view>
@@ -43,23 +43,9 @@ export default {
       expanded: true
     }
   },
-  created() {
-    const app = getApp()
-    if (app && app.globalData && app.globalData.expandedIds) {
-      this.expanded = app.globalData.expandedIds[this.node.id] !== false
-    }
-  },
   methods: {
     toggleNode() {
       this.expanded = !this.expanded
-      const app = getApp()
-      if (app && app.globalData) {
-        if (!app.globalData.expandedIds) {
-          app.globalData.expandedIds = {}
-        }
-        app.globalData.expandedIds[this.node.id] = this.expanded
-      }
-      this.$emit('toggle', this.node.id, this.expanded)
     },
     onClick() {
       this.$emit('click', this.node)

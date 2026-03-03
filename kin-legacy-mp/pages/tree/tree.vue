@@ -34,6 +34,8 @@
             direction="all" 
             :x="treeX" 
             :y="treeY"
+            :out-of-bounds="true"
+            friction="2"
             @change="onMovableChange"
           >
             <view class="jpu-tree-card">
@@ -183,8 +185,8 @@ export default {
       expandedIds: {},
       selectedMember: {},
       formType: '',
-      treeX: 0,
-      treeY: 0,
+      treeX: 50,
+      treeY: 50,
       editForm: {
         name: '',
         gender: 'male'
