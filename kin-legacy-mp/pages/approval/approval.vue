@@ -61,7 +61,21 @@
 
         <view class="jpu-approval-content">
           <view v-if="approval.type === 'join'">
-            呈请为家族添丁入谱
+            <view v-if="approval.joinType === 'add_child'" class="jpu-join-type">
+              <text class="jpu-type-tag">录入子嗣</text>
+            </view>
+            <view v-else-if="approval.joinType === 'add_parent'" class="jpu-join-type">
+              <text class="jpu-type-tag">追溯先祖</text>
+            </view>
+            <view v-else class="jpu-join-type">
+              <text class="jpu-type-tag jpu-type-new">新成员加入</text>
+            </view>
+            <view class="jpu-relation-desc" v-if="approval.relationDesc">
+              <text>{{ approval.relationDesc }}</text>
+            </view>
+            <view v-else>
+              <text>呈请为家族添丁入谱</text>
+            </view>
           </view>
           <view v-else-if="approval.type === 'edit'">
             <view>申请修改成员信息</view>
@@ -530,5 +544,34 @@ export default {
 .change-arrow {
   color: #666;
   margin-left: 16rpx;
+}
+
+/* 加入类型标签 */
+.jpu-join-type {
+  margin-bottom: 12rpx;
+}
+
+.jpu-type-tag {
+  display: inline-block;
+  background-color: #E3F2FD;
+  border: 2rpx solid #1976D2;
+  color: #1976D2;
+  font-size: 24rpx;
+  font-weight: bold;
+  padding: 6rpx 16rpx;
+  border-radius: 4rpx;
+}
+
+.jpu-type-new {
+  background-color: #E8F5E9;
+  border: 2rpx solid #388E3C;
+  color: #388E3C;
+}
+
+.jpu-relation-desc {
+  margin-top: 12rpx;
+  font-size: 28rpx;
+  color: var(--theme-text);
+  font-weight: 500;
 }
 </style>

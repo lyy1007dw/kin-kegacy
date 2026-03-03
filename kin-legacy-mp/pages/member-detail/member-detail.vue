@@ -17,16 +17,14 @@
         <!-- 成员基本信息卡片 -->
         <view class="detail-card">
           <view class="member-header">
-            <view class="member-avatar-wrap">
-              <image 
-                v-if="member.avatar" 
-                :src="member.avatar" 
-                class="member-avatar" 
-                mode="aspectFill"
-              />
-              <view v-else class="member-avatar-placeholder">
-                <text>{{ member.name?.charAt(0) || '?' }}</text>
-              </view>
+            <image 
+              v-if="member.avatar" 
+              :src="member.avatar" 
+              class="member-avatar" 
+              mode="aspectFill"
+            />
+            <view v-else class="member-avatar-placeholder">
+              <text>{{ member.name?.charAt(0) || '?' }}</text>
             </view>
             <view class="member-basic">
               <text class="member-name">{{ member.name }}</text>
@@ -35,7 +33,6 @@
                   {{ member.gender === 'male' ? '男' : '女' }}
                 </text>
                 <text v-if="member.age" class="age-tag">{{ member.age }}岁</text>
-                <text v-if="member.isCreator === 1" class="creator-tag">创建者</text>
                 <text v-if="member.currentUser" class="me-tag">{{ member.currentUserLabel || '我' }}</text>
               </view>
             </view>
@@ -340,10 +337,6 @@ export default {
 .member-header {
   display: flex;
   align-items: center;
-}
-
-.member-avatar-wrap {
-  margin-right: 24rpx;
 }
 
 .member-avatar, .member-avatar-placeholder {

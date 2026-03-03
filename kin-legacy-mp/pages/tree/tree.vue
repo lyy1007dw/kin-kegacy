@@ -27,15 +27,118 @@
       </view>
 
       <!-- 家谱树容器 -->
-      <scroll-view scroll-x class="jpu-tree-scroll" v-if="treeData.length > 0">
+      <view class="jpu-tree-scroll" v-if="treeData.length > 0">
         <view class="jpu-tree-card">
           <view class="jpu-tree-container">
-            <view class="jpu-tree-node-item" v-for="(node, index) in treeData" :key="node.id" :style="{ marginTop: index === 0 ? '0' : '32rpx' }">
-              <TreeNode :node="node" :currentUserId="currentUserId" @nodeclick="onTreeNodeClick" />
-            </view>
+            <block v-for="rootNode in treeData" :key="rootNode.id">
+              <view class="tree-node-wrapper">
+                <view class="tree-node-item">
+                  <view class="node-container">
+                    <view v-if="rootNode.children && rootNode.children.length > 0" class="toggle-btn" @click="toggleNode(rootNode.id)">
+                      <text>{{ expandedIds[rootNode.id] !== false ? '−' : '+' }}</text>
+                    </view>
+                    <view class="member-card" :class="{ 'is-me': rootNode.currentUser }" @click="onTreeNodeClick(rootNode)">
+                      <view class="gender-badge" :class="rootNode.gender">
+                        <text>{{ rootNode.gender === 'male' ? '男' : '女' }}</text>
+                      </view>
+                      <view class="member-info">
+                        <text class="member-name">{{ rootNode.name }}</text>
+                        <view class="generation-tag">
+                          <text>第 {{ rootNode.generation || 1 }} 世</text>
+                        </view>
+                      </view>
+                      <view v-if="rootNode.currentUser" class="current-user-badge">
+                        <text>{{ rootNode.currentUserLabel || '我' }}</text>
+                      </view>
+                    </view>
+                  </view>
+                </view>
+                <view v-if="rootNode.children && rootNode.children.length > 0 && expandedIds[rootNode.id] !== false" class="tree-children">
+                  <template v-for="child in rootNode.children" :key="child.id">
+                    <view class="tree-node-wrapper">
+                      <view class="tree-node-item">
+                        <view class="node-container">
+                          <view v-if="child.children && child.children.length > 0" class="toggle-btn" @click="toggleNode(child.id)">
+                            <text>{{ expandedIds[child.id] !== false ? '−' : '+' }}</text>
+                          </view>
+                          <view class="member-card" :class="{ 'is-me': child.currentUser }" @click="onTreeNodeClick(child)">
+                            <view class="gender-badge" :class="child.gender">
+                              <text>{{ child.gender === 'male' ? '男' : '女' }}</text>
+                            </view>
+                            <view class="member-info">
+                              <text class="member-name">{{ child.name }}</text>
+                              <view class="generation-tag">
+                                <text>第 {{ child.generation || 1 }} 世</text>
+                              </view>
+                            </view>
+                            <view v-if="child.currentUser" class="current-user-badge">
+                              <text>{{ child.currentUserLabel || '我' }}</text>
+                            </view>
+                          </view>
+                        </view>
+                      </view>
+                      <view v-if="child.children && child.children.length > 0 && expandedIds[child.id] !== false" class="tree-children">
+                        <template v-for="grandchild in child.children" :key="grandchild.id">
+                          <view class="tree-node-wrapper">
+                            <view class="tree-node-item">
+                              <view class="node-container">
+                                <view v-if="grandchild.children && grandchild.children.length > 0" class="toggle-btn" @click="toggleNode(grandchild.id)">
+                                  <text>{{ expandedIds[grandchild.id] !== false ? '−' : '+' }}</text>
+                                </view>
+                                  <view class="member-card" :class="{ 'is-me': grandchild.currentUser }" @click="onTreeNodeClick(grandchild)">
+                                    <view class="gender-badge" :class="grandchild.gender">
+                                      <text>{{ grandchild.gender === 'male' ? '男' : '女' }}</text>
+                                    </view>
+                                    <view class="member-info">
+                                      <text class="member-name">{{ grandchild.name }}</text>
+                                      <view class="generation-tag">
+                                        <text>第 {{ grandchild.generation || 1 }} 世</text>
+                                      </view>
+                                    </view>
+                                    <view v-if="grandchild.currentUser" class="current-user-badge">
+                                      <text>{{ grandchild.currentUserLabel || '我' }}</text>
+                                    </view>
+                                  </view>
+                              </view>
+                            </view>
+                            <view v-if="grandchild.children && grandchild.children.length > 0 && expandedIds[grandchild.id] !== false" class="tree-children">
+                              <template v-for="g4 in grandchild.children" :key="g4.id">
+                                <view class="tree-node-wrapper">
+                                  <view class="tree-node-item">
+                                    <view class="node-container">
+                                      <view v-if="g4.children && g4.children.length > 0" class="toggle-btn" @click="toggleNode(g4.id)">
+                                        <text>{{ expandedIds[g4.id] !== false ? '−' : '+' }}</text>
+                                      </view>
+                                      <view class="member-card" :class="{ 'is-me': g4.currentUser }" @click="onTreeNodeClick(g4)">
+                                        <view class="gender-badge" :class="g4.gender">
+                                          <text>{{ g4.gender === 'male' ? '男' : '女' }}</text>
+                                        </view>
+                                        <view class="member-info">
+                                          <text class="member-name">{{ g4.name }}</text>
+                                          <view class="generation-tag">
+                                            <text>第 {{ g4.generation || 1 }} 世</text>
+                                          </view>
+                                        </view>
+                                        <view v-if="g4.currentUser" class="current-user-badge">
+                                          <text>{{ g4.currentUserLabel || '我' }}</text>
+                                        </view>
+                                      </view>
+                                    </view>
+                                  </view>
+                                </view>
+                              </template>
+                            </view>
+                          </view>
+                        </template>
+                      </view>
+                    </view>
+                  </template>
+                </view>
+              </view>
+            </block>
           </view>
         </view>
-      </scroll-view>
+      </view>
 
       <view v-else class="jpu-empty-state">
         <view class="jpu-empty-icon-wrap">
@@ -154,13 +257,8 @@
 <script>
 import { mapState } from 'vuex'
 import api from '../../utils/api'
-import TreeNode from '../../components/TreeNode.vue'
 
 export default {
-  components: {
-    TreeNode
-  },
-
   data() {
     return {
       showInviteModal: false,
@@ -168,6 +266,7 @@ export default {
       showEditModal: false,
       members: [],
       treeData: [],
+      expandedIds: {},
       selectedMember: {},
       formType: '',
       editForm: {
@@ -217,11 +316,27 @@ export default {
         var res = await api.member.getTree(this.currentFamily.id)
         this.treeData = res || []
         
+        // 收集所有节点ID并设置为展开
+        this.expandedIds = {}
+        const collectIds = (nodes) => {
+          nodes.forEach(node => {
+            this.$set(this.expandedIds, node.id, true)
+            if (node.children && node.children.length > 0) {
+              collectIds(node.children)
+            }
+          })
+        }
+        collectIds(this.treeData)
+        
         var memberRes = await api.member.getList(this.currentFamily.id)
         this.members = memberRes || []
       } catch (error) {
         console.error('加载树形数据失败', error)
       }
+    },
+
+    toggleNode(nodeId) {
+      this.$set(this.expandedIds, nodeId, !this.expandedIds[nodeId])
     },
 
     showMemberDetail(member) {
@@ -419,29 +534,6 @@ export default {
   font-size: 24rpx;
   font-weight: bold;
   color: var(--theme-primary);
-}
-
-/* 家谱树滚动区 */
-.jpu-tree-scroll {
-  white-space: nowrap;
-}
-
-.jpu-tree-card {
-  background-color: var(--theme-card);
-  border: 2rpx solid var(--theme-border);
-  border-radius: 12rpx;
-  padding: 32rpx;
-  display: inline-block;
-  min-width: 100%;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
-}
-
-.jpu-tree-container {
-  min-width: max-content;
-}
-
-.jpu-tree-node-item {
-  position: relative;
 }
 
 /* 遮罩层 */
@@ -751,5 +843,208 @@ export default {
   font-weight: bold;
   letter-spacing: 8rpx;
   color: var(--theme-primary);
+}
+
+/* 家谱树滚动 */
+.jpu-tree-scroll {
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.jpu-tree-scroll::-webkit-scrollbar {
+  height: 8rpx;
+}
+
+.jpu-tree-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.jpu-tree-scroll::-webkit-scrollbar-thumb {
+  background: var(--theme-border);
+  border-radius: 4rpx;
+}
+
+.jpu-tree-card {
+  background-color: var(--theme-card);
+  border: 2rpx solid var(--theme-border);
+  border-radius: 16rpx;
+  padding: 32rpx;
+  min-width: max-content;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+}
+
+.jpu-tree-container {
+  min-width: max-content;
+}
+
+/* 树节点样式 - 参考文档风格 */
+.tree-node-wrapper {
+  position: relative;
+}
+
+.tree-node-item {
+  position: relative;
+  margin-top: 24rpx;
+}
+
+.tree-node-item:first-child {
+  margin-top: 0;
+}
+
+.node-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.toggle-btn {
+  position: absolute;
+  left: -44rpx;
+  width: 36rpx;
+  height: 36rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6rpx;
+  font-size: 24rpx;
+  font-weight: bold;
+  z-index: 10;
+  box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
+  background-color: #FBF9F6;
+  border: 1rpx solid #D4C9BD;
+}
+
+.toggle-btn text {
+  color: #8E292C;
+}
+
+.member-card {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 24rpx;
+  border-radius: 12rpx;
+  position: relative;
+  margin-left: 16rpx;
+  min-width: 280rpx;
+  box-shadow: 0 4rpx 12rpx rgba(62, 42, 35, 0.08);
+}
+
+.member-card.is-me {
+  background: linear-gradient(145deg, #FFF8F0 0%, #FEF3E2 100%);
+  border: 2rpx solid #E6B0AA;
+}
+
+.member-card:not(.is-me) {
+  background: linear-gradient(145deg, #FFFFFF 0%, #FBF9F6 100%);
+  border: 2rpx solid #D4C9BD;
+}
+
+.gender-badge {
+  width: 48rpx;
+  height: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4rpx;
+  margin-right: 20rpx;
+  font-size: 22rpx;
+  font-weight: bold;
+  flex-shrink: 0;
+  box-shadow: inset 0 1rpx 2rpx rgba(0, 0, 0, 0.1);
+}
+
+.gender-badge.male {
+  background: linear-gradient(145deg, #E3F2FD 0%, #BBDEFB 100%);
+  border: 1rpx solid #1565C0;
+  color: #1565C0;
+}
+
+.gender-badge.female {
+  background: linear-gradient(145deg, #FCE4EC 0%, #F8BBD9 100%);
+  border: 1rpx solid #C62828;
+  color: #C62828;
+}
+
+.member-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.member-name {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #3E2A23;
+  letter-spacing: 2rpx;
+}
+
+.generation-tag {
+  display: inline-block;
+  margin-top: 6rpx;
+}
+
+.generation-tag text {
+  font-size: 20rpx;
+  color: #8E292C;
+  background: #FDF2F1;
+  border: 1rpx solid #E6B0AA;
+  border-radius: 4rpx;
+  padding: 2rpx 10rpx;
+}
+
+.current-user-badge {
+  position: absolute;
+  top: -10rpx;
+  right: -10rpx;
+  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+  border: 3rpx solid #FFFFFF;
+  border-radius: 50%;
+  width: 36rpx;
+  height: 36rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18rpx;
+  color: #fff;
+  box-shadow: 0 2rpx 8rpx rgba(59, 130, 246, 0.4);
+}
+
+.tree-children {
+  position: relative;
+  padding-left: 56rpx;
+  margin-left: 24rpx;
+}
+
+.tree-children::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1rpx;
+  background: #D4C9BD;
+}
+
+.tree-children .tree-node-item::before {
+  content: '';
+  position: absolute;
+  top: 28rpx;
+  left: -56rpx;
+  width: 56rpx;
+  height: 1rpx;
+  background: #D4C9BD;
+}
+
+.tree-children .tree-node-item:last-child::before {
+  background: transparent;
+}
+
+.tree-children .tree-node-item:last-child::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 50%;
+  width: 1rpx;
+  background: #D4C9BD;
 }
 </style>

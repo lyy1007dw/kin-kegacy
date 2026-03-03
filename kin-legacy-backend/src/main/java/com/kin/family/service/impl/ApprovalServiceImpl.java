@@ -50,6 +50,18 @@ public class ApprovalServiceImpl implements ApprovalService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final ApprovalMapper approvalMapper;
 
+    private GenderEnum getGenderEnum(String value) {
+        if (value == null) {
+            throw new BusinessException("性别不能为空");
+        }
+        for (GenderEnum gender : GenderEnum.values()) {
+            if (gender.getValue().equals(value)) {
+                return gender;
+            }
+        }
+        throw new BusinessException("无效的性别值: " + value);
+    }
+
     @Override
     public PageResult<ApprovalDetailDTO> getApprovals(Long familyId, String type, String status, Integer page, Integer size) {
         Family family = familyMapper.selectById(familyId);
@@ -109,14 +121,98 @@ public class ApprovalServiceImpl implements ApprovalService {
         joinRequestMapper.updateById(joinRequest);
 
         if ("approve".equals(request.getAction())) {
-            FamilyMember member = FamilyMember.builder()
-                    .familyId(joinRequest.getFamilyId())
-                    .userId(joinRequest.getApplicantUserId())
-                    .name(joinRequest.getApplicantName())
-                    .gender(GenderEnum.MALE)
-                    .isCreator(0)
-                    .build();
-            memberMapper.insert(member);
+            String joinType = joinRequest.getJoinType();
+            if ("add_child".equals(joinType) || "add_parent".equals(joinType)) {
+                handleAddChildOrParentRequest(joinRequest);
+            } else {
+                FamilyMember member = FamilyMember.builder()
+                        .familyId(joinRequest.getFamilyId())
+                        .userId(joinRequest.getApplicantUserId())
+                        .name(joinRequest.getApplicantName())
+                        .gender(GenderEnum.MALE)
+                        .isCreator(0)
+                        .build();
+                memberMapper.insert(member);
+            }
+        }
+    }
+
+    private void handleAddChildOrParentRequest(JoinRequest joinRequest) {
+        if (joinRequest.getChangesJson() == null) {
+            return;
+        }
+        try {
+            Map<String, Object> memberInfo = objectMapper.readValue(
+                    joinRequest.getChangesJson(),
+                    new TypeReference<Map<String, Object>>() {}
+            );
+
+            String joinType = joinRequest.getJoinType();
+            if ("add_child".equals(joinType)) {
+                Long parentId = memberInfo.get("parentId") instanceof Number ?
+                        ((Number) memberInfo.get("parentId")).longValue() : null;
+
+                FamilyMember child = FamilyMember.builder()
+                        .familyId(joinRequest.getFamilyId())
+                        .userId(memberInfo.get("userId") instanceof Number ?
+                                ((Number) memberInfo.get("userId")).longValue() : null)
+                        .name((String) memberInfo.get("name"))
+                        .gender(getGenderEnum((String) memberInfo.get("gender")))
+                        .avatar((String) memberInfo.get("avatar"))
+                        .birthDate(memberInfo.get("birthDate") != null ?
+                                LocalDate.parse((String) memberInfo.get("birthDate")) : null)
+                        .birthPlace((String) memberInfo.get("birthPlace"))
+                        .bio((String) memberInfo.get("bio"))
+                        .isCreator(0)
+                        .build();
+                memberMapper.insert(child);
+
+                if (parentId != null) {
+                    RelationTypeEnum relationType = child.getGender() == GenderEnum.MALE ?
+                            RelationTypeEnum.FATHER_SON : RelationTypeEnum.MOTHER_SON;
+
+                    MemberRelation relation = MemberRelation.builder()
+                            .familyId(joinRequest.getFamilyId())
+                            .fromMemberId(parentId)
+                            .toMemberId(child.getId())
+                            .relationType(relationType)
+                            .build();
+                    relationMapper.insert(relation);
+                }
+            } else if ("add_parent".equals(joinType)) {
+                Long childId = memberInfo.get("childId") instanceof Number ?
+                        ((Number) memberInfo.get("childId")).longValue() : null;
+
+                FamilyMember parent = FamilyMember.builder()
+                        .familyId(joinRequest.getFamilyId())
+                        .userId(memberInfo.get("userId") instanceof Number ?
+                                ((Number) memberInfo.get("userId")).longValue() : null)
+                        .name((String) memberInfo.get("name"))
+                        .gender(getGenderEnum((String) memberInfo.get("gender")))
+                        .avatar((String) memberInfo.get("avatar"))
+                        .birthDate(memberInfo.get("birthDate") != null ?
+                                LocalDate.parse((String) memberInfo.get("birthDate")) : null)
+                        .birthPlace((String) memberInfo.get("birthPlace"))
+                        .bio((String) memberInfo.get("bio"))
+                        .isCreator(0)
+                        .build();
+                memberMapper.insert(parent);
+
+                if (childId != null) {
+                    RelationTypeEnum relationType = parent.getGender() == GenderEnum.MALE ?
+                            RelationTypeEnum.FATHER_SON : RelationTypeEnum.MOTHER_SON;
+
+                    MemberRelation relation = MemberRelation.builder()
+                            .familyId(joinRequest.getFamilyId())
+                            .fromMemberId(parent.getId())
+                            .toMemberId(childId)
+                            .relationType(relationType)
+                            .build();
+                    relationMapper.insert(relation);
+                }
+            }
+        } catch (JsonProcessingException e) {
+            throw new BusinessException("解析成员信息失败");
         }
     }
 
@@ -141,7 +237,12 @@ public class ApprovalServiceImpl implements ApprovalService {
                         new TypeReference<Map<String, Object>>() {}
                 );
 
-                if (memberInfo.containsKey("parentId")) {
+                String requestType = editRequest.getRequestType();
+                if ("add_child".equals(requestType)) {
+                    handleAddMemberRequest(editRequest, memberInfo);
+                } else if ("add_parent".equals(requestType)) {
+                    handleAddParentRequest(editRequest, memberInfo);
+                } else if (memberInfo.containsKey("parentId")) {
                     handleAddMemberRequest(editRequest, memberInfo);
                 } else if (memberInfo.containsKey("childId")) {
                     handleAddParentRequest(editRequest, memberInfo);

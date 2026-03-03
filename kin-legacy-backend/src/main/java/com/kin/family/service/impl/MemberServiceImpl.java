@@ -148,15 +148,36 @@ public class MemberServiceImpl implements MemberService {
             throw new BusinessException("性别不能为空");
         }
 
-        JoinRequest joinRequest = JoinRequest.builder()
-                .familyId(familyId)
-                .applicantUserId(userId)
-                .applicantName(request.getName())
-                .joinType("add_child")
-                .relationDesc("为 [" + parent.getName() + "] 录入子嗣")
-                .status(RequestStatusEnum.PENDING)
-                .build();
-        joinRequestMapper.insert(joinRequest);
+        User user = userMapper.selectById(userId);
+        String applicantName = user != null && user.getName() != null ? user.getName() : "申请人";
+
+        try {
+            java.util.Map<String, Object> memberInfo = new java.util.HashMap<>();
+            memberInfo.put("parentId", parentId);
+            memberInfo.put("parentName", parent.getName());
+            memberInfo.put("name", request.getName());
+            memberInfo.put("gender", request.getGender());
+            if (request.getAvatar() != null) memberInfo.put("avatar", request.getAvatar());
+            if (request.getBirthDate() != null) memberInfo.put("birthDate", request.getBirthDate().toString());
+            if (request.getBirthPlace() != null) memberInfo.put("birthPlace", request.getBirthPlace());
+            if (request.getBio() != null) memberInfo.put("bio", request.getBio());
+            if (request.getUserId() != null) memberInfo.put("userId", request.getUserId());
+
+            String changesJson = objectMapper.writeValueAsString(memberInfo);
+
+            JoinRequest joinRequest = JoinRequest.builder()
+                    .familyId(familyId)
+                    .applicantUserId(userId)
+                    .applicantName(applicantName)
+                    .relationDesc("为" + parent.getName() + "录入子嗣")
+                    .joinType("add_child")
+                    .changesJson(changesJson)
+                    .status(RequestStatusEnum.PENDING)
+                    .build();
+            joinRequestMapper.insert(joinRequest);
+        } catch (JsonProcessingException e) {
+            throw new BusinessException("序列化修改内容失败");
+        }
     }
 
     @Override
@@ -179,15 +200,36 @@ public class MemberServiceImpl implements MemberService {
             throw new BusinessException("性别不能为空");
         }
 
-        JoinRequest joinRequest = JoinRequest.builder()
-                .familyId(familyId)
-                .applicantUserId(userId)
-                .applicantName(request.getName())
-                .joinType("add_parent")
-                .relationDesc("为 [" + child.getName() + "] 追溯先祖")
-                .status(RequestStatusEnum.PENDING)
-                .build();
-        joinRequestMapper.insert(joinRequest);
+        User user = userMapper.selectById(userId);
+        String applicantName = user != null && user.getName() != null ? user.getName() : "申请人";
+
+        try {
+            java.util.Map<String, Object> memberInfo = new java.util.HashMap<>();
+            memberInfo.put("childId", childId);
+            memberInfo.put("childName", child.getName());
+            memberInfo.put("name", request.getName());
+            memberInfo.put("gender", request.getGender());
+            if (request.getAvatar() != null) memberInfo.put("avatar", request.getAvatar());
+            if (request.getBirthDate() != null) memberInfo.put("birthDate", request.getBirthDate().toString());
+            if (request.getBirthPlace() != null) memberInfo.put("birthPlace", request.getBirthPlace());
+            if (request.getBio() != null) memberInfo.put("bio", request.getBio());
+            if (request.getUserId() != null) memberInfo.put("userId", request.getUserId());
+
+            String changesJson = objectMapper.writeValueAsString(memberInfo);
+
+            JoinRequest joinRequest = JoinRequest.builder()
+                    .familyId(familyId)
+                    .applicantUserId(userId)
+                    .applicantName(applicantName)
+                    .relationDesc("为" + child.getName() + "追溯先祖")
+                    .joinType("add_parent")
+                    .changesJson(changesJson)
+                    .status(RequestStatusEnum.PENDING)
+                    .build();
+            joinRequestMapper.insert(joinRequest);
+        } catch (JsonProcessingException e) {
+            throw new BusinessException("序列化修改内容失败");
+        }
     }
 
     @Override

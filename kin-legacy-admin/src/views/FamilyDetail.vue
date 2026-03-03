@@ -89,7 +89,6 @@ onMounted(() => {
         <div v-for="member in members" :key="member.id" class="member-card" @click="viewMemberDetail(member)">
           <div class="member-avatar">{{ member.name?.charAt(0) || '?' }}</div>
           <div class="member-name">{{ member.name }}</div>
-          <NTag v-if="member.isCreator === 1" type="success" size="small">创建者</NTag>
         </div>
       </div>
       <NEmpty v-else description="暂无成员" />
@@ -104,9 +103,6 @@ onMounted(() => {
           <NDescriptionsItem label="出生日期">{{ memberDetail.birthDate || '-' }}</NDescriptionsItem>
           <NDescriptionsItem label="出生地">{{ memberDetail.birthPlace || '-' }}</NDescriptionsItem>
           <NDescriptionsItem label="去世日期">{{ memberDetail.deathDate || '-' }}</NDescriptionsItem>
-          <NDescriptionsItem label="角色" v-if="memberDetail.isCreator === 1">
-            <NTag type="success">创建者</NTag>
-          </NDescriptionsItem>
           <NDescriptionsItem label="简介" :span="2">{{ memberDetail.bio || '暂无' }}</NDescriptionsItem>
           <NDescriptionsItem label="照片相册" :span="2">
             <div class="photos-placeholder">{{ memberDetail.photos || '该功能待开发' }}</div>

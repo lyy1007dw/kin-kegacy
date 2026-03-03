@@ -34,6 +34,8 @@ public class JoinRequest {
 
     private String joinType;
 
+    private String changesJson;
+
     private RequestStatusEnum status;
 
     private Long reviewerId;
